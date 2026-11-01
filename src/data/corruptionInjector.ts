@@ -19,14 +19,16 @@ function deepCopyArray(data: WeatherDataPoint[]): WeatherDataPoint[] {
 export function injectDropout(
   data: WeatherDataPoint[],
   rate: number,
+  seed?: number,
 ): CorruptedDataset {
   const clampedRate = Math.max(0, Math.min(0.4, rate));
   const clean = deepCopyArray(data);
   const corrupted: (WeatherDataPoint | null)[] = data.map(deepCopyPoint);
   const indices = new Set<number>();
 
+  const random = seededRandom(seed);
   for (let i = 0; i < corrupted.length; i++) {
-    if (Math.random() < clampedRate) {
+    if (random() < clampedRate) {
       corrupted[i] = null;
       indices.add(i);
     }
@@ -118,6 +120,7 @@ export function applyCorruption(
   dropoutRate: number,
   heatSpike: boolean,
   droughtShock: boolean,
+  seed?: number,
 ): CorruptedDataset {
   if (data.length === 0) {
     return {
@@ -162,8 +165,9 @@ export function applyCorruption(
   // 3. Dropout (last, so it can null any point including spiked ones)
   if (dropoutRate > 0) {
     const clamped = Math.max(0, Math.min(0.4, dropoutRate));
+    const random = seededRandom(seed);
     for (let i = 0; i < working.length; i++) {
-      if (Math.random() < clamped) {
+      if (random() < clamped) {
         working[i] = null;
         allIndices.add(i);
       }
@@ -175,5 +179,17 @@ export function applyCorruption(
     clean,
     corruptedIndices: allIndices,
     dropoutRate,
+  };
+}
+
+function seededRandom(seed?: number): () => number {
+  if (seed === undefined) return Math.random;
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
   };
 }

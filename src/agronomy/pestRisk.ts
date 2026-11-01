@@ -5,7 +5,7 @@ import type { PestRiskParams, PestRiskResult, WeatherDataPoint } from '../types'
 export const DEFAULT_PEST_PARAMS: PestRiskParams = {
   tempLow: 10,
   tempHigh: 25,
-  rhThreshold: 85,
+  rhThreshold: 90,
   leafWetHours: 6,
   dewPointDepression: 2,
 };

@@ -5,24 +5,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        // High-contrast clean neutral palette
+        // Keep the structure neutral; restore color for semantic statuses and data.
         zinc: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#27272a',
-          900: '#18181b',
-          950: '#09090b',
+          50: '#FAFAFA',
+          100: '#F4F4F5',
+          200: '#E4E4E7',
+          300: '#D4D4D8',
+          400: '#A1A1AA',
+          500: '#71717A',
+          600: '#52525B',
+          700: '#3F3F46',
+          800: '#27272A',
+          900: '#18181B',
+          950: '#09090B',
         },
+        earth: { 50: '#FAFAFA', 100: '#F4F4F5', 200: '#E4E4E7', 300: '#D4D4D8', 500: '#71717A', 800: '#27272A', 950: '#09090B' },
+        clay: { DEFAULT: '#71717A', 50: '#F4F4F5', 100: '#E4E4E7', 500: '#71717A', 700: '#3F3F46' },
       },
       fontFamily: {
+        display: ['Inter', 'Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
         sans: [
           'Inter',
+          'Geist',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',

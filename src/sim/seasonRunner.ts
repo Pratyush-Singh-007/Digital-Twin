@@ -53,8 +53,9 @@ export function runSeasonSimulation(
   const corruptedDataset = applyCorruption(
     testSeason,
     config.dropoutRate,
-    false, // heatSpike handled separately if needed
-    false, // droughtShock handled separately if needed
+    config.heatSpike ?? false,
+    config.droughtShock ?? false,
+    config.seed,
   );
   const corruptedView = corruptedDataset.data;
 
@@ -241,6 +242,7 @@ export function runDropoutSweep(
     const res = runSeasonSimulation(data, {
       ...config,
       dropoutRate: rate,
+      seed: Math.round(rate * 10000) + 2026,
     });
     points.push({
       dropoutRate: Math.round(rate * 100),

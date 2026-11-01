@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { TabId, DataSourceStatus, LocationPreset } from '../types';
 import { LOCATIONS } from '../data/locations';
 import {
@@ -12,10 +12,10 @@ import {
   Sun,
   Play,
   RotateCw,
-  Check,
   ChevronDown,
-  Terminal,
+  Check,
 } from 'lucide-react';
+import { HeadingNote } from './HeadingNote';
 
 interface Props {
   activeTab: TabId;
@@ -36,6 +36,88 @@ interface Props {
   children: React.ReactNode;
 }
 
+const destinations = [
+  { id: 'decision' as TabId, label: 'Decisions', description: 'Irrigation safety checks', icon: GitBranch },
+  { id: 'simulation' as TabId, label: 'Simulation', description: 'Season outcomes', icon: FlaskConical },
+  { id: 'evaluation' as TabId, label: 'Evaluation', description: 'Model performance', icon: BarChart3 },
+  { id: 'about' as TabId, label: 'Data & About', description: 'Sources and limits', icon: Info },
+];
+
+const PageNavigation: React.FC<Pick<Props, 'activeTab' | 'setActiveTab'>> = ({ activeTab, setActiveTab }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pagesButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !containerRef.current?.contains(event.target)) setIsOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        pagesButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <nav aria-label="Main navigation" className="flex items-center gap-1">
+      <button
+        type="button"
+        aria-current={activeTab === 'dashboard' ? 'page' : undefined}
+        onClick={() => { setActiveTab('dashboard'); setIsOpen(false); }}
+        className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors ${activeTab === 'dashboard' ? 'bg-zinc-200 text-zinc-950 dark:bg-zinc-700 dark:text-white' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'}`}
+      >
+        <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard
+      </button>
+      <div ref={containerRef} className="relative">
+        <button
+          ref={pagesButtonRef}
+          type="button"
+          data-testid="pages-menu-button"
+          aria-expanded={isOpen}
+          aria-controls="pages-menu"
+          onClick={() => setIsOpen((open) => !open)}
+          className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors ${activeTab !== 'dashboard' || isOpen ? 'bg-zinc-200 text-zinc-950 dark:bg-zinc-700 dark:text-white' : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'}`}
+        >
+          Pages <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {isOpen && (
+          <div id="pages-menu" className="absolute left-0 top-full z-50 mt-2 w-60 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            {destinations.map((item) => {
+              const Icon = item.icon;
+              const selected = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={selected ? 'page' : undefined}
+                  onClick={() => { setActiveTab(item.id); setIsOpen(false); pagesButtonRef.current?.focus(); }}
+                  className={`flex min-h-12 w-full items-center gap-3 rounded px-2.5 py-2 text-left transition-colors ${selected ? 'bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-white' : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800'}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-zinc-500" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold">{item.label}</span>
+                    <span className="mt-0.5 block text-[10px] text-zinc-500">{item.description}</span>
+                  </span>
+                  {selected && <Check aria-hidden="true" className="h-3.5 w-3.5" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+};
+
 export const Layout: React.FC<Props> = ({
   activeTab,
   setActiveTab,
@@ -55,111 +137,77 @@ export const Layout: React.FC<Props> = ({
   children,
 }) => {
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
+  const locationButtonRef = useRef<HTMLButtonElement>(null);
+  const latitudeInputRef = useRef<HTMLInputElement>(null);
   const [tempLat, setTempLat] = useState<string>(customLat.toString());
   const [tempLon, setTempLon] = useState<string>(customLon.toString());
+  const [coordinateError, setCoordinateError] = useState<string | null>(null);
 
-  const navItems = [
-    { id: 'dashboard' as TabId, label: 'Twin Dashboard', icon: LayoutDashboard },
-    { id: 'decision' as TabId, label: 'Decision Logic', icon: GitBranch },
-    { id: 'simulation' as TabId, label: 'Season Simulation', icon: FlaskConical },
-    { id: 'evaluation' as TabId, label: 'Model Evaluation', icon: BarChart3 },
-    { id: 'about' as TabId, label: 'About / Data', icon: Info },
-  ];
+  useEffect(() => {
+    if (!showLocationModal) return;
+    latitudeInputRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowLocationModal(false);
+        locationButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showLocationModal]);
+
+  const pageCopy: Record<TabId, { title: string; description: string }> = {
+    dashboard: { title: 'Dashboard', description: 'Live field conditions' },
+    decision: { title: 'Decisions', description: 'Irrigation safety checks' },
+    simulation: { title: 'Simulation', description: 'Season outcomes' },
+    evaluation: { title: 'Evaluation', description: 'Model performance' },
+    about: { title: 'Data & About', description: 'Sources and limitations' },
+  };
+  const currentPage = pageCopy[activeTab];
 
   const handleApplyCustomCoords = () => {
     const lat = parseFloat(tempLat);
     const lon = parseFloat(tempLon);
-    if (!isNaN(lat) && !isNaN(lon)) {
-      onSetCustomCoords(lat, lon);
-      onToggleCustom(true);
-      setShowLocationModal(false);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      setCoordinateError('Enter a valid latitude and longitude.');
+      return;
     }
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      setCoordinateError('Latitude must be −90 to 90; longitude −180 to 180.');
+      return;
+    }
+    setCoordinateError(null);
+    onSetCustomCoords(lat, lon);
+    onToggleCustom(true);
+    setShowLocationModal(false);
+    locationButtonRef.current?.focus();
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 flex flex-col md:flex-row font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
-      {/* Sidebar (Desktop) */}
-      <aside className="hidden md:flex flex-col w-60 bg-zinc-50/50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 p-4 justify-between flex-shrink-0">
-        <div className="space-y-6">
-          {/* Logo & Identity */}
-          <div className="px-1 flex items-center justify-between">
-            <div>
-              <div className="font-mono font-bold text-xs uppercase tracking-widest text-zinc-900 dark:text-white flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-zinc-900 dark:bg-white inline-block rounded-xs" />
-                AGRI-TWIN
-              </div>
-              <p className="text-[10px] font-mono text-zinc-400 mt-0.5">
-                UNCERTAINTY ENGINE v2.0
-              </p>
-            </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 text-zinc-500">
-              CORE
-            </span>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-          <button
-            onClick={onStartDemo}
-            className="w-full btn btn-primary btn-sm flex items-center justify-center gap-1.5 font-mono text-[11px]"
-          >
-            <Play className="w-3 h-3 fill-current" />
-            <span>RUN GUIDED DEMO</span>
-          </button>
-
-          <div className="p-2.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 font-mono text-[10px] text-zinc-500 space-y-1">
-            <div className="flex justify-between items-center text-zinc-400">
-              <span>MODEL:</span>
-              <span className="text-zinc-800 dark:text-zinc-200 font-semibold">RIDGE SURROGATE</span>
-            </div>
-            <div className="flex justify-between items-center text-zinc-400">
-              <span>CALIBRATION:</span>
-              <span className="text-zinc-800 dark:text-zinc-200">SPLIT-CONFORMAL</span>
-            </div>
-            <div className="text-[9px] text-zinc-400 pt-0.5 border-t border-zinc-100 dark:border-zinc-800">
-              Honest prototype benchmark
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-black">
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-earth-300 selection:text-zinc-900">
+      <div className="flex-1 flex flex-col min-w-0 bg-zinc-100 dark:bg-zinc-900">
         {/* Top Header Bar */}
-        <header className="bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3">
-          {/* Location & Status Badges */}
-          <div className="flex items-center flex-wrap gap-2">
+        <header className="bg-white/95 dark:bg-zinc-800/95 border-b border-zinc-200 dark:border-zinc-700 px-4 md:px-7 py-3 sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
+            <div className="font-semibold tracking-tight text-sm text-zinc-900 dark:text-white">AgriTwin</div>
+            <PageNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
             <button
-              onClick={() => setShowLocationModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 text-xs font-mono transition-colors"
+              ref={locationButtonRef}
+              onClick={() => {
+                setTempLat((useCustom ? customLat : location.lat).toString());
+                setTempLon((useCustom ? customLon : location.lon).toString());
+                setCoordinateError(null);
+                setShowLocationModal(true);
+              }}
+              aria-label="Choose field location"
+              aria-haspopup="dialog"
+              className="flex min-h-10 items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-mono transition-colors hover:border-clay"
+              style={{ background: 'var(--surface-raised)', color: 'var(--ink)', borderColor: 'var(--border)' }}
             >
               <MapPin className="w-3 h-3 text-zinc-500" />
-              <span>
+              <span data-testid="current-location">
                 {useCustom
-                  ? `[${customLat.toFixed(2)}°N, ${customLon.toFixed(2)}°E]`
+                  ? `[${Math.abs(customLat).toFixed(2)}°${customLat < 0 ? 'S' : 'N'}, ${Math.abs(customLon).toFixed(2)}°${customLon < 0 ? 'W' : 'E'}]`
                   : `${location.name.toUpperCase()} (${location.state})`}
               </span>
               <ChevronDown className="w-3 h-3 text-zinc-400 ml-0.5" />
@@ -167,13 +215,13 @@ export const Layout: React.FC<Props> = ({
 
             {/* Data Source Badge */}
             {dataSource === 'live' ? (
-              <span className="badge badge-green">LIVE OPEN-METEO</span>
+              <span data-testid="source-status" role="status" aria-live="polite" className="badge badge-green">LIVE OPEN-METEO</span>
             ) : dataSource === 'offline' ? (
-              <span className="badge badge-amber">OFFLINE DEMO DATA</span>
+              <span data-testid="source-status" role="status" aria-live="polite" className="badge badge-amber">OFFLINE DEMO DATA</span>
             ) : dataSource === 'loading' ? (
-              <span className="badge badge-blue">FETCHING...</span>
+              <span data-testid="source-status" role="status" aria-live="polite" className="badge badge-blue">FETCHING...</span>
             ) : (
-              <span className="badge badge-red">STREAM ERROR</span>
+              <span data-testid="source-status" role="status" aria-live="polite" className="badge badge-red">STREAM ERROR</span>
             )}
 
             <span className="badge badge-default">
@@ -184,60 +232,46 @@ export const Layout: React.FC<Props> = ({
           {/* Right Header Controls */}
           <div className="flex items-center gap-2 font-mono text-xs">
             {lastUpdated && (
-              <span className="hidden lg:inline text-zinc-400 text-[11px]">
-                SYNC: {lastUpdated.toLocaleTimeString()}
+              <span className="hidden lg:inline text-zinc-500 text-[11px]">
+                Updated {lastUpdated.toLocaleTimeString()}
               </span>
             )}
 
             <button
               onClick={onRefreshData}
-              title="Refresh telemetry"
-              className="p-1.5 rounded border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-300 transition-colors"
+              type="button"
+              data-testid="refresh-data"
+              aria-label={dataSource === 'loading' ? 'Refreshing weather data' : 'Refresh weather data'}
+              title="Fetch current weather again"
+              disabled={dataSource === 'loading'}
+              className="min-h-10 min-w-10 flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-300 transition-colors"
             >
-              <RotateCw className="w-3.5 h-3.5" />
+              <RotateCw className={`w-3.5 h-3.5 ${dataSource === 'loading' ? 'animate-spin' : ''}`} />
             </button>
 
             <button
               onClick={toggleTheme}
-              title="Toggle theme"
-              className="p-1.5 rounded border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-300 transition-colors"
+              type="button"
+              data-testid="toggle-theme"
+              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              className="min-h-10 min-w-10 flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-300 transition-colors"
             >
               {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
 
-            <button
-              onClick={onStartDemo}
-              className="md:hidden btn btn-primary btn-sm text-[11px]"
-            >
-              DEMO
+            <button id="start-guide" onClick={onStartDemo} type="button" className="btn btn-primary btn-sm text-[11px]">
+              <Play className="h-3 w-3 fill-current" /> GUIDE
             </button>
           </div>
         </header>
 
-        {/* Mobile Tab Bar */}
-        <div className="md:hidden bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex overflow-x-auto py-1 px-2 gap-1 font-mono text-xs">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs whitespace-nowrap ${
-                  isActive
-                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
-                }`}
-              >
-                <Icon className="w-3 h-3" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* Main Content View */}
-        <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-9 max-w-7xl w-full mx-auto space-y-7">
+          <section className="pb-1">
+            <h1 className="font-sans text-2xl md:text-[2rem] leading-[1.12] font-semibold tracking-[-0.035em] text-zinc-800 dark:text-earth-50">{currentPage.title}</h1>
+            <HeadingNote className="text-xs md:text-sm" title={`This page shows ${currentPage.description.toLowerCase()}.`}>{currentPage.description}</HeadingNote>
+          </section>
           {children}
         </main>
       </div>
@@ -245,13 +279,15 @@ export const Layout: React.FC<Props> = ({
       {/* Location Selector Modal */}
       {showLocationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-zinc-950 rounded-lg max-w-md w-full p-5 border border-zinc-300 dark:border-zinc-800 shadow-2xl space-y-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="location-dialog-title" className="bg-white dark:bg-zinc-950 rounded-lg max-w-md w-full p-5 border border-zinc-300 dark:border-zinc-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2.5">
-              <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-                SELECT AGRO-CLIMATIC PRESET
-              </h3>
+              <div>
+                <h3 id="location-dialog-title" className="font-mono font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">Choose a location</h3>
+                <HeadingNote>Preset or coordinates</HeadingNote>
+              </div>
               <button
-                onClick={() => setShowLocationModal(false)}
+                onClick={() => { setShowLocationModal(false); locationButtonRef.current?.focus(); }}
+                aria-label="Close location dialog"
                 className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-mono text-xs"
               >
                 [ESC]
@@ -264,10 +300,13 @@ export const Layout: React.FC<Props> = ({
                 return (
                   <button
                     key={loc.name}
+                    data-testid={`location-${loc.name.toLowerCase()}`}
+                    aria-pressed={isSelected}
                     onClick={() => {
                       onSelectLocation(loc);
                       onToggleCustom(false);
                       setShowLocationModal(false);
+                      locationButtonRef.current?.focus();
                     }}
                     className={`p-2.5 rounded border text-left font-mono transition-all ${
                       isSelected
@@ -276,9 +315,7 @@ export const Layout: React.FC<Props> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100">
-                        {loc.name}
-                      </span>
+                      <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100">{loc.name}</span>
                       {isSelected && <Check className="w-3 h-3 text-zinc-900 dark:text-white" />}
                     </div>
                     <div className="text-[10px] text-zinc-500">{loc.state}</div>
@@ -292,17 +329,21 @@ export const Layout: React.FC<Props> = ({
 
             {/* Custom Coordinates */}
             <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
-              <span className="font-mono text-[10px] uppercase text-zinc-400 block">
-                CUSTOM COORDINATES
-              </span>
+                <span className="font-mono text-[10px] uppercase text-zinc-700 dark:text-zinc-300 block">Custom coordinates</span>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="font-mono text-[10px] text-zinc-400 block mb-0.5">LAT (°N)</label>
                   <input
                     type="number"
+                    aria-label="Latitude"
+                    aria-invalid={Boolean(coordinateError)}
+                    aria-describedby={coordinateError ? 'coordinate-error' : undefined}
+                    min="-90"
+                    max="90"
                     step="0.01"
+                    ref={latitudeInputRef}
                     value={tempLat}
-                    onChange={(e) => setTempLat(e.target.value)}
+                    onChange={(e) => { setTempLat(e.target.value); setCoordinateError(null); }}
                     className="input-field"
                   />
                 </div>
@@ -310,15 +351,22 @@ export const Layout: React.FC<Props> = ({
                   <label className="font-mono text-[10px] text-zinc-400 block mb-0.5">LON (°E)</label>
                   <input
                     type="number"
+                    aria-label="Longitude"
+                    aria-invalid={Boolean(coordinateError)}
+                    aria-describedby={coordinateError ? 'coordinate-error' : undefined}
+                    min="-180"
+                    max="180"
                     step="0.01"
                     value={tempLon}
-                    onChange={(e) => setTempLon(e.target.value)}
+                    onChange={(e) => { setTempLon(e.target.value); setCoordinateError(null); }}
                     className="input-field"
                   />
                 </div>
               </div>
+              {coordinateError && <p id="coordinate-error" data-testid="coordinates-error" role="alert" className="text-xs text-rose-700 dark:text-rose-300">{coordinateError}</p>}
               <button
                 onClick={handleApplyCustomCoords}
+                data-testid="apply-coordinates"
                 className="w-full btn btn-primary btn-sm font-mono text-xs mt-1"
               >
                 APPLY COORDINATES

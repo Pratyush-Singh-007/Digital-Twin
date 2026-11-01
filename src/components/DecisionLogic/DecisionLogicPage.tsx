@@ -11,6 +11,7 @@ import {
   Sliders,
   ArrowDown,
 } from 'lucide-react';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   cleanData: WeatherDataPoint[];
@@ -113,6 +114,7 @@ export const DecisionLogicPage: React.FC<Props> = ({
           <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             UNCERTAINTY-GATED DECISION PIPELINE
           </h2>
+          <HeadingNote title="Rule 3 checks prediction uncertainty before soil and disease conditions.">Three safety checks</HeadingNote>
         </div>
         <p className="text-xs text-zinc-500 font-sans">
           Safety-first cascade: Rule 3 (Epistemic Safety Brake) is evaluated prior to agronomic moisture and pathogen checks.
@@ -123,13 +125,16 @@ export const DecisionLogicPage: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="card space-y-2">
           <div className="flex justify-between items-center text-xs">
-            <span className="text-zinc-500">UNCERTAINTY LIMIT (ε):</span>
+            <label htmlFor="decision-uncertainty-limit" className="text-zinc-500" title="ε is the maximum prediction interval width before the safety lock is applied.">UNCERTAINTY LIMIT (ε):</label>
             <span className="font-bold text-zinc-900 dark:text-zinc-100">
               {(epsilon * 100).toFixed(1)}% m³/m³
             </span>
           </div>
           <input
             type="range"
+            id="decision-uncertainty-limit"
+            data-testid="decision-uncertainty-limit"
+            aria-label="Decision uncertainty limit"
             min="0.04"
             max="0.25"
             step="0.01"
@@ -137,19 +142,22 @@ export const DecisionLogicPage: React.FC<Props> = ({
             onChange={(e) => setEpsilon(parseFloat(e.target.value))}
           />
           <p className="text-[10px] text-zinc-400 font-sans">
-            Triggers Rule 3 (System Lock) whenever 90% confidence width exceeds ε.
+            Triggers Rule 3 (System Lock) when the nominal interval width exceeds ε.
           </p>
         </div>
 
         <div className="card space-y-2">
           <div className="flex justify-between items-center text-xs">
-            <span className="text-zinc-500">DRY THRESHOLD (θ):</span>
+            <label htmlFor="decision-dry-threshold" className="text-zinc-500" title="Soil below this volumetric moisture level is considered dry.">DRY THRESHOLD (θ):</label>
             <span className="font-bold text-zinc-900 dark:text-zinc-100">
               {(dryThreshold * 100).toFixed(1)}% m³/m³
             </span>
           </div>
           <input
             type="range"
+            id="decision-dry-threshold"
+            data-testid="decision-dry-threshold"
+            aria-label="Decision dry threshold"
             min="0.15"
             max="0.38"
             step="0.01"
@@ -165,7 +173,8 @@ export const DecisionLogicPage: React.FC<Props> = ({
       {/* Flowchart */}
       <div className="card space-y-4">
         <div className="text-xs font-bold uppercase text-zinc-500 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-          DECISION TREE EVALUATION (ACTIVE LIVE STATE MARKED)
+          <div>DECISION TREE</div>
+          <HeadingNote>Current rule path</HeadingNote>
         </div>
 
         <div className="max-w-xl mx-auto flex flex-col items-center space-y-3 py-2 text-xs">
@@ -178,7 +187,7 @@ export const DecisionLogicPage: React.FC<Props> = ({
 
           {/* Gate 1 */}
           <div className="w-full p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-center">
-            <div className="text-[10px] uppercase text-zinc-400 font-bold">GATE 1: EPISTEMIC UNCERTAINTY</div>
+            <div className="text-[10px] uppercase text-zinc-400 font-bold" title="Epistemic uncertainty reflects limited or degraded model evidence.">GATE 1: UNCERTAINTY</div>
             <div className="font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
               IS INTERVAL WIDTH &gt;= ε ?
             </div>
@@ -219,7 +228,7 @@ export const DecisionLogicPage: React.FC<Props> = ({
 
           {/* Gate 2 */}
           <div className="w-full p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-center">
-            <div className="text-[10px] uppercase text-zinc-400 font-bold">GATE 2: AGRONOMIC MOISTURE</div>
+            <div className="text-[10px] uppercase text-zinc-400 font-bold">GATE 2: SOIL MOISTURE</div>
             <div className="font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
               IS SOIL MOISTURE &lt; DRY THRESHOLD?
             </div>
@@ -260,7 +269,7 @@ export const DecisionLogicPage: React.FC<Props> = ({
 
           {/* Gate 3 */}
           <div className="w-full p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-center">
-            <div className="text-[10px] uppercase text-zinc-400 font-bold">GATE 3: PATHOGEN CONFLICT</div>
+            <div className="text-[10px] uppercase text-zinc-400 font-bold" title="A high late-blight risk can suspend irrigation despite dry soil.">GATE 3: DISEASE RISK</div>
             <div className="font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
               IS LATE BLIGHT RISK &gt; 0.70?
             </div>
@@ -320,8 +329,9 @@ export const DecisionLogicPage: React.FC<Props> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              48-HOUR DECISION AUDIT TIMELINE
+              48-HOUR DECISION TIMELINE
             </h3>
+            <HeadingNote>Hourly rule history</HeadingNote>
             <p className="text-[10px] text-zinc-500">
               Hourly audit trail of rule triggers based on historical telemetry
             </p>

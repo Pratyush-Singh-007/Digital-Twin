@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { WeatherDataPoint, ForecastPoint, Prediction } from '../../types';
 import { AlertCircle } from 'lucide-react';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   cleanData: WeatherDataPoint[];
@@ -118,12 +119,13 @@ export const SoilMoistureChart: React.FC<Props> = ({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              SOIL MOISTURE TRAJECTORY & 90% CONFORMAL BAND
+              Soil moisture trajectory · nominal 90% interval
             </h2>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border border-zinc-200 dark:border-zinc-800 text-zinc-500">
               12H HORIZON
             </span>
           </div>
+          <HeadingNote title="The shaded band is a nominal interval, not a coverage guarantee.">Observed and predicted moisture</HeadingNote>
           <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
             48h sensor window + 12h split-conformal uncertainty rollout
           </p>
@@ -136,11 +138,11 @@ export const SoilMoistureChart: React.FC<Props> = ({
             <span>GROUND TRUTH</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 bg-zinc-400 inline-block border-t border-dashed border-zinc-400" />
+            <span className="w-2.5 h-0.5 bg-sky-600 dark:bg-sky-400 inline-block border-t border-dashed border-sky-600 dark:border-sky-400" />
             <span>PREDICTION</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 bg-zinc-200 dark:bg-zinc-800 border border-zinc-400/50 inline-block" />
+            <span className="w-2.5 h-2.5 bg-sky-100 dark:bg-sky-950 border border-sky-400 dark:border-sky-700 inline-block" />
             <span>90% INTERVAL</span>
           </div>
         </div>
@@ -152,27 +154,27 @@ export const SoilMoistureChart: React.FC<Props> = ({
           <ComposedChart data={chartData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
             <defs>
               <linearGradient id="monoBand" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#71717a" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#71717a" stopOpacity={0.05} />
+                <stop offset="5%" stopColor="var(--prediction)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--prediction)" stopOpacity={0.06} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="2 2" stroke="#71717a20" vertical={false} />
+            <CartesianGrid strokeDasharray="2 3" stroke="var(--border)" strokeOpacity={0.8} vertical={false} />
 
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 10, fill: '#71717a', fontFamily: 'monospace' }}
+              tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: 'monospace' }}
               tickLine={false}
-              axisLine={{ stroke: '#71717a30' }}
+              axisLine={{ stroke: 'var(--border)' }}
               interval="preserveStartEnd"
               minTickGap={25}
             />
 
             <YAxis
               domain={[0, 60]}
-              tick={{ fontSize: 10, fill: '#71717a', fontFamily: 'monospace' }}
+              tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: 'monospace' }}
               tickLine={false}
-              axisLine={{ stroke: '#71717a30' }}
+              axisLine={{ stroke: 'var(--border)' }}
               unit="%"
             />
 
@@ -221,9 +223,9 @@ export const SoilMoistureChart: React.FC<Props> = ({
                 x2={rng.end}
                 y1={0}
                 y2={60}
-                fill="#f43f5e"
+                fill="#F43F5E"
                 fillOpacity={0.08}
-                stroke="#f43f5e"
+                stroke="#F43F5E"
                 strokeOpacity={0.2}
               />
             ))}
@@ -232,7 +234,7 @@ export const SoilMoistureChart: React.FC<Props> = ({
             <Area
               type="monotone"
               dataKey="upper"
-              stroke="#71717a"
+              stroke="var(--prediction)"
               strokeOpacity={0.4}
               strokeWidth={1}
               strokeDasharray="2 2"
@@ -244,7 +246,7 @@ export const SoilMoistureChart: React.FC<Props> = ({
             <Line
               type="monotone"
               dataKey="lower"
-              stroke="#71717a"
+              stroke="var(--prediction)"
               strokeOpacity={0.4}
               strokeWidth={1}
               strokeDasharray="2 2"
@@ -257,7 +259,7 @@ export const SoilMoistureChart: React.FC<Props> = ({
             <Line
               type="monotone"
               dataKey="actual"
-              stroke="currentColor"
+              stroke="var(--ink)"
               className="text-zinc-900 dark:text-white"
               strokeWidth={2}
               dot={false}
@@ -270,10 +272,10 @@ export const SoilMoistureChart: React.FC<Props> = ({
             <Line
               type="monotone"
               dataKey="predicted"
-              stroke="#a1a1aa"
+              stroke="var(--prediction)"
               strokeWidth={1.5}
               strokeDasharray="3 3"
-              dot={{ r: 2, fill: '#71717a' }}
+              dot={{ r: 2, fill: 'var(--prediction)' }}
               connectNulls={true}
               isAnimationActive={true}
               animationDuration={250}

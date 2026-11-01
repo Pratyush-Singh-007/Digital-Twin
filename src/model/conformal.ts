@@ -13,7 +13,7 @@ export class ConformalCalibrator {
   private scores: number[] = [];
 
   /**
-   * Calibrate from training residuals.
+   * Calibrate from a held-out calibration partition's residuals.
    * @param residuals  Array of (actual − predicted) values.
    * @param alpha      Mis-coverage rate (default 0.10 → 90 % intervals).
    */

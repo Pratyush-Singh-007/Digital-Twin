@@ -1,6 +1,7 @@
 import React from 'react';
 import { RotateCcw, AlertTriangle } from 'lucide-react';
 import type { WeatherDataPoint } from '../../types';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   dropoutRate: number;
@@ -44,6 +45,7 @@ export const SensorNoisePanel: React.FC<Props> = ({
           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             SENSOR TELEMETRY INJECTOR
           </h3>
+          <HeadingNote>Test sensor failures</HeadingNote>
           <p className="text-[10px] text-zinc-500">
             Inject packet drops & synthetic anomalies into input stream
           </p>
@@ -51,6 +53,7 @@ export const SensorNoisePanel: React.FC<Props> = ({
 
         <button
           onClick={onReset}
+          data-testid="reset-sensor-noise"
           className="btn btn-secondary btn-sm text-[10px] flex items-center gap-1"
         >
           <RotateCcw className="w-3 h-3" /> RESET
@@ -69,6 +72,8 @@ export const SensorNoisePanel: React.FC<Props> = ({
         </div>
 
         <input
+          data-testid="dropout-slider"
+          aria-label="Sensor dropout probability"
           type="range"
           min="0"
           max="0.4"
@@ -90,6 +95,8 @@ export const SensorNoisePanel: React.FC<Props> = ({
       <div className="grid grid-cols-2 gap-2 pt-1">
         <button
           onClick={() => setHeatSpike((prev) => !prev)}
+          data-testid="heat-spike-toggle"
+          aria-pressed={heatSpike}
           className={`btn btn-sm text-[11px] justify-between border ${
             heatSpike
               ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white'
@@ -102,6 +109,8 @@ export const SensorNoisePanel: React.FC<Props> = ({
 
         <button
           onClick={() => setDroughtShock((prev) => !prev)}
+          data-testid="drought-shock-toggle"
+          aria-pressed={droughtShock}
           className={`btn btn-sm text-[11px] justify-between border ${
             droughtShock
               ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white'

@@ -230,7 +230,7 @@ export class SurrogateModel implements ModelInterface {
    * Train the Ridge regression surrogate on historical clean data.
    */
   public train(data: WeatherDataPoint[]): void {
-    if (data.length < 30) {
+    if (data.length < 32) {
       // Fallback weights for untrained or tiny dataset
       this.weights = [0.05, 0.6, 0.15, 0.05, 0.05, 0.02, 0.01, 0.02, 0.02, 0.01, -0.01, 0.02, 0.05, 0, 0, 0];
       this.baseResidualSigma = 0.02;
@@ -242,7 +242,7 @@ export class SurrogateModel implements ModelInterface {
     const X: number[][] = [];
     const y: number[] = [];
 
-    // Form windows of 24 hours to predict next hour's soil moisture
+    // Form chronological windows to predict the next hour's soil moisture.
     for (let i = 24; i < data.length - 1; i++) {
       const window = data.slice(i - 24, i);
       const target = data[i + 1].soilMoisture;
@@ -251,54 +251,52 @@ export class SurrogateModel implements ModelInterface {
       y.push(target);
     }
 
-    // Train Ridge regression with lambda = 1.0
-    this.weights = fitRidge(X, y, 1.0);
+    if (X.length < 6) return;
 
-    // Compute in-sample residuals for metrics and conformal calibration
-    const residuals: number[] = [];
+    // Chronological 60/20/20 train/calibrate/evaluate split. No calibration
+    // or evaluation rows participate in fitting the ridge coefficients.
+    const trainEnd = Math.max(1, Math.floor(X.length * 0.6));
+    const calibrationEnd = Math.max(trainEnd + 1, Math.floor(X.length * 0.8));
+    const calibrationStop = Math.min(calibrationEnd, X.length - 1);
+    this.weights = fitRidge(X.slice(0, trainEnd), y.slice(0, trainEnd), 1.0);
+    const predictFeatures = (features: number[]) => Math.max(0.05, Math.min(0.60,
+      features.reduce((sum, value, index) => sum + value * this.weights[index], 0),
+    ));
+
+    const calibrationResiduals: number[] = [];
+    for (let i = trainEnd; i < calibrationStop; i++) {
+      calibrationResiduals.push(y[i] - predictFeatures(X[i]));
+    }
+    if (calibrationResiduals.length === 0) return;
+    this.baseResidualSigma = Math.max(0.005, Math.sqrt(
+      calibrationResiduals.reduce((sum, value) => sum + value * value, 0) / calibrationResiduals.length,
+    ));
+    this.calibrator.calibrate(calibrationResiduals, 0.1);
+
+    // Report accuracy, coverage and width only on the final untouched period.
+    const testStart = calibrationStop;
+    const testActual = y.slice(testStart);
+    const testPredicted = X.slice(testStart).map(predictFeatures);
+    const n = testActual.length;
+    if (n === 0) return;
+    const meanActual = testActual.reduce((sum, value) => sum + value, 0) / n;
     let absErrSum = 0;
     let sqErrSum = 0;
-    const yMean = y.reduce((a, b) => a + b, 0) / y.length;
     let ssTot = 0;
-
-    for (let i = 0; i < X.length; i++) {
-      let pred = 0;
-      for (let j = 0; j < this.weights.length; j++) {
-        pred += X[i][j] * this.weights[j];
-      }
-      pred = Math.max(0.05, Math.min(0.60, pred));
-      const res = y[i] - pred;
-      residuals.push(res);
-      absErrSum += Math.abs(res);
-      sqErrSum += res * res;
-      ssTot += Math.pow(y[i] - yMean, 2);
-    }
-
-    const n = X.length;
-    const mae = absErrSum / n;
-    const rmse = Math.sqrt(sqErrSum / n);
-    const ssRes = sqErrSum;
-    const r2 = ssTot > 0 ? Math.max(0, 1 - ssRes / ssTot) : 0.85;
-
-    this.baseResidualSigma = Math.max(0.005, rmse);
-
-    // Calibrate split conformal intervals at 90% confidence (alpha = 0.1)
-    this.calibrator.calibrate(residuals, 0.1);
-
-    // Compute PICP and MPIW on calibration
     let coveredCount = 0;
     let widthSum = 0;
-    for (let i = 0; i < n; i++) {
-      let pred = 0;
-      for (let j = 0; j < this.weights.length; j++) {
-        pred += X[i][j] * this.weights[j];
-      }
-      const interval = this.calibrator.getInterval(pred, this.baseResidualSigma);
-      if (y[i] >= interval.lower && y[i] <= interval.upper) {
-        coveredCount++;
-      }
+    for (let j = 0; j < n; j++) {
+      const residual = testActual[j] - testPredicted[j];
+      absErrSum += Math.abs(residual);
+      sqErrSum += residual * residual;
+      ssTot += (testActual[j] - meanActual) ** 2;
+      const interval = this.calibrator.getInterval(testPredicted[j], this.baseResidualSigma);
+      if (testActual[j] >= interval.lower && testActual[j] <= interval.upper) coveredCount++;
       widthSum += interval.width;
     }
+    const mae = absErrSum / n;
+    const rmse = Math.sqrt(sqErrSum / n);
+    const r2 = ssTot > 0 ? 1 - sqErrSum / ssTot : 0;
 
     this.metrics = {
       mae: Math.round(mae * 10000) / 10000,

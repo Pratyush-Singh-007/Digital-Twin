@@ -8,7 +8,9 @@ import { SensorNoisePanel } from './SensorNoisePanel';
 import { UncertaintyMeter } from './UncertaintyMeter';
 import { PestRiskGauge } from './PestRiskGauge';
 import { ActuatorPanel } from './ActuatorPanel';
+import { FieldTwin3D } from './FieldTwin3D';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   cleanData: WeatherDataPoint[];
@@ -113,6 +115,7 @@ export const DashboardPage: React.FC<Props> = ({
       <div className="card max-w-lg mx-auto text-center space-y-3 p-8">
         <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Telemetry Error</h3>
+        <HeadingNote>Live data unavailable</HeadingNote>
         <p className="text-xs text-gray-500">{error}</p>
       </div>
     );
@@ -121,9 +124,33 @@ export const DashboardPage: React.FC<Props> = ({
   const intervalWidth = prediction.upper - prediction.lower;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Actuator Status Card on Top for Immediate Operational Clarity */}
       <ActuatorPanel decision={decision} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="lg:col-span-7">
+          <FieldTwin3D
+            data={currentWindow}
+            moisture={latestMoisture}
+            uncertainty={intervalWidth}
+            pestRisk={pestRisk}
+            dropoutRate={dropoutRate}
+          />
+        </div>
+        <div className="lg:col-span-5 space-y-5">
+          <UncertaintyMeter
+            intervalWidth={intervalWidth}
+            epsilon={epsilon}
+            setEpsilon={setEpsilon}
+          />
+          <PestRiskGauge
+            pestRisk={pestRisk}
+            params={pestParams}
+            onParamsChange={setPestParams}
+          />
+        </div>
+      </div>
 
       {/* Main Forecast Chart */}
       <SoilMoistureChart
@@ -134,33 +161,17 @@ export const DashboardPage: React.FC<Props> = ({
         forecastPoints={forecastPoints}
       />
 
-      {/* Controls & Meters Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SensorNoisePanel
-          dropoutRate={dropoutRate}
-          setDropoutRate={setDropoutRate}
-          heatSpike={heatSpike}
-          setHeatSpike={setHeatSpike}
-          droughtShock={droughtShock}
-          setDroughtShock={setDroughtShock}
-          onReset={resetCorruption}
-          corruptedData={corruptedData}
-          corruptedIndices={corruptedIndices}
-          totalCount={cleanData.length}
-        />
-
-        <UncertaintyMeter
-          intervalWidth={intervalWidth}
-          epsilon={epsilon}
-          setEpsilon={setEpsilon}
-        />
-      </div>
-
-      {/* Agronomic Risk Section */}
-      <PestRiskGauge
-        pestRisk={pestRisk}
-        params={pestParams}
-        onParamsChange={setPestParams}
+      <SensorNoisePanel
+        dropoutRate={dropoutRate}
+        setDropoutRate={setDropoutRate}
+        heatSpike={heatSpike}
+        setHeatSpike={setHeatSpike}
+        droughtShock={droughtShock}
+        setDroughtShock={setDroughtShock}
+        onReset={resetCorruption}
+        corruptedData={corruptedData}
+        corruptedIndices={corruptedIndices}
+        totalCount={cleanData.length}
       />
     </div>
   );

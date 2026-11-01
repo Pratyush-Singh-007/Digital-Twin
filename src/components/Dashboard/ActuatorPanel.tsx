@@ -8,6 +8,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import type { Decision, ActuatorAction } from '../../types';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   decision: Decision;
@@ -44,6 +45,7 @@ export const ActuatorPanel: React.FC<Props> = ({
 
   return (
     <div
+      data-testid="actuator-status"
       className={`card border-l-4 transition-colors font-mono ${
         isLocked
           ? 'border-l-rose-600 bg-rose-50/20 dark:bg-rose-950/10'
@@ -54,7 +56,7 @@ export const ActuatorPanel: React.FC<Props> = ({
     >
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2 mb-3">
         <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">
-          ACTUATOR COMMAND DISPATCH
+          OPERATOR ACTION
         </span>
 
         <span
@@ -96,7 +98,7 @@ export const ActuatorPanel: React.FC<Props> = ({
                 ? 'text-rose-700 dark:text-rose-400'
                 : isSuspended
                 ? 'text-amber-700 dark:text-amber-400'
-                : 'text-zinc-900 dark:text-zinc-100'
+                : 'text-emerald-700 dark:text-emerald-400'
             }`}
           >
             {isLocked
@@ -105,12 +107,13 @@ export const ActuatorPanel: React.FC<Props> = ({
               ? 'SUSPENDED: PEST CONFLICT / ADEQUATE'
               : 'IRRIGATE: SAFE ACTION AUTHORIZED'}
           </h2>
+          <HeadingNote>Prototype command preview</HeadingNote>
 
           <p className="text-xs font-sans text-zinc-700 dark:text-zinc-300">
             {manualOverride === 'approved'
-              ? 'Operator manual override: Irrigation dispatched despite high uncertainty.'
+              ? 'Operator override: irrigation is allowed in this prototype despite high uncertainty. No physical pump is connected.'
               : manualOverride === 'dismissed'
-              ? 'Operator dismissed: Actuators held offline by human supervisor.'
+              ? 'Operator dismissed: the prototype keeps irrigation suspended. No physical actuator is connected.'
               : decision.reason}
           </p>
 
@@ -138,12 +141,14 @@ export const ActuatorPanel: React.FC<Props> = ({
           <div className="flex gap-2">
             <button
               onClick={handleDismiss}
+              data-testid="dismiss-action"
               className="btn btn-secondary btn-sm text-[11px] flex items-center gap-1"
             >
               <XCircle className="w-3 h-3" /> DISMISS
             </button>
             <button
               onClick={handleApprove}
+              data-testid="approve-action"
               className="btn btn-primary btn-sm text-[11px] flex items-center gap-1 bg-rose-600 hover:bg-rose-700 text-white"
             >
               <CheckCircle className="w-3 h-3" /> APPROVE MANUALLY

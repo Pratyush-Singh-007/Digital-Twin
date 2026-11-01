@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronRight, ChevronLeft, X, Check } from 'lucide-react';
 import type { TabId } from '../types';
 
@@ -33,14 +33,12 @@ export const GuidedDemo: React.FC<Props> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(0);
 
-  if (!isOpen) return null;
-
   const steps: Step[] = [
     {
       title: 'STEP 1: BASELINE CLEAN TELEMETRY',
-      subtitle: 'System operating normally with nominal sensors',
+      subtitle: 'Normal sensor readings',
       description:
-        'The digital twin receives uncorrupted telemetry. The split-conformal 90% confidence band is narrow (±3%). Uncertainty is well below safety brake ε, and autonomous scheduling is safe.',
+        'The prototype receives uncorrupted telemetry. Its nominal 90% interval is narrow for this sample, below the configured safety threshold. The rule engine may permit irrigation if the soil and pathogen checks also pass.',
       highlightText: 'Confidence band is narrow; uncertainty < ε.',
       action: () => {
         onSetTab('dashboard');
@@ -50,9 +48,9 @@ export const GuidedDemo: React.FC<Props> = ({
     },
     {
       title: 'STEP 2: INJECT 30% SENSOR DROPOUT',
-      subtitle: 'Simulating field hardware degradation and packet drop',
+      subtitle: 'Dropped sensor packets',
       description:
-        'We now inject 30% sensor dropout. In the telemetry strip, red dropout slots appear. Instead of failing silently, the digital twin widens its confidence envelope in real time (<300ms).',
+        'We now inject 30% sensor dropout. In the telemetry strip, gray dropout slots appear. Instead of failing silently, the digital twin widens its confidence envelope in real time (<300ms).',
       highlightText: 'Confidence band expands as sensor readings drop.',
       action: () => {
         onSetTab('dashboard');
@@ -61,7 +59,7 @@ export const GuidedDemo: React.FC<Props> = ({
     },
     {
       title: 'STEP 3: UNCERTAINTY EXCEEDS ε → ACTUATOR LOCKED',
-      subtitle: 'Rule 3 Safety Brake disengages autonomous automation',
+      subtitle: 'Uncertainty exceeds limit',
       description:
         'Because interval width exceeds safety threshold ε, Rule 3 forces the actuator into LOCKED state. Automation disengages and requests human supervisor review.',
       highlightText: 'LOCKED: Epistemic uncertainty prevents erroneous actions.',
@@ -73,7 +71,7 @@ export const GuidedDemo: React.FC<Props> = ({
     },
     {
       title: 'STEP 4: PATHOGEN CONFLICT → SUSPENDED',
-      subtitle: 'Rule 2 halts irrigation during active late blight conditions',
+      subtitle: 'Disease risk conflicts',
       description:
         'When soil is dry but microclimate pathogen risk exceeds 0.70, Rule 2 halts irrigation to prevent amplifying blight spores.',
       highlightText: 'SUSPENDED: Pathogen risk takes priority over soil dry trigger.',
@@ -85,7 +83,7 @@ export const GuidedDemo: React.FC<Props> = ({
     },
     {
       title: 'STEP 5: FULL-SEASON SIMULATION BENCHMARK',
-      subtitle: 'Comparing Confidence-Blind vs Uncertainty-Gated in Season Sim',
+      subtitle: 'Compare season policies',
       description:
         'Explore the Season Simulation tab to run a 90-day parallel experiment demonstrating error elimination and water conservation.',
       highlightText: 'Click Finish or Season Sim tab to run the full benchmark.',
@@ -95,6 +93,24 @@ export const GuidedDemo: React.FC<Props> = ({
     },
   ];
 
+  const handleClose = () => {
+    onClose();
+    window.requestAnimationFrame(() => document.getElementById('start-guide')?.focus());
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCurrentStep(0);
+    steps[0].action();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
   const step = steps[currentStep];
 
   const handleNext = () => {
@@ -103,7 +119,7 @@ export const GuidedDemo: React.FC<Props> = ({
       setCurrentStep(next);
       steps[next].action();
     } else {
-      onClose();
+      handleClose();
     }
   };
 
@@ -116,22 +132,22 @@ export const GuidedDemo: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full font-mono">
+    <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full font-mono" role="dialog" aria-modal="true" aria-labelledby="guided-demo-title" data-testid="guided-demo">
       <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border-2 border-zinc-900 dark:border-zinc-100 shadow-2xl space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
           <div className="text-[10px] uppercase font-bold text-zinc-500">
             WALKTHROUGH: STEP {currentStep + 1} / {steps.length}
           </div>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-xs">
+          <button aria-label="Close walkthrough" onClick={handleClose} className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-xs">
             [ESC]
           </button>
         </div>
 
         {/* Body */}
         <div className="space-y-1.5">
-          <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{step.title}</div>
-          <div className="text-[10px] text-zinc-500">{step.subtitle}</div>
+          <div id="guided-demo-title" className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{step.title}</div>
+          <div className="text-[10px] text-zinc-500" title={step.description}>{step.subtitle}</div>
           <p className="text-[11px] font-sans text-zinc-600 dark:text-zinc-400 leading-snug">
             {step.description}
           </p>
@@ -144,18 +160,18 @@ export const GuidedDemo: React.FC<Props> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-          <button onClick={onClose} className="text-[10px] text-zinc-400 hover:text-zinc-900">
+          <button aria-label="Close walkthrough" onClick={handleClose} className="text-[10px] text-zinc-400 hover:text-zinc-900">
             CLOSE
           </button>
 
           <div className="flex items-center gap-1.5">
             {currentStep > 0 && (
-              <button onClick={handlePrev} className="btn btn-secondary btn-sm text-[10px]">
+            <button data-testid="guided-back" onClick={handlePrev} className="btn btn-secondary btn-sm text-[10px]">
                 <ChevronLeft className="w-3 h-3" /> BACK
               </button>
             )}
 
-            <button onClick={handleNext} className="btn btn-primary btn-sm text-[10px]">
+            <button data-testid="guided-next" onClick={handleNext} className="btn btn-primary btn-sm text-[10px]">
               {currentStep === steps.length - 1 ? 'FINISH' : 'NEXT'} <ChevronRight className="w-3 h-3" />
             </button>
           </div>

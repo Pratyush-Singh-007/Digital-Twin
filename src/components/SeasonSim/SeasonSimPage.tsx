@@ -16,6 +16,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { Play, RotateCw } from 'lucide-react';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   cleanData: WeatherDataPoint[];
@@ -90,8 +91,9 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-2.5">
           <div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              90-DAY PARALLEL TWIN SEASON EXPERIMENT
+              90-DAY SEASON SIMULATION
             </h2>
+            <HeadingNote>Compare two policies</HeadingNote>
             <p className="text-[11px] text-zinc-500 font-sans mt-0.5">
               Identical weather & sensor corruption applied to Confidence-Blind vs Uncertainty-Gated Twin.
             </p>
@@ -99,6 +101,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
 
           <button
             onClick={handleRunSimulation}
+            data-testid="run-season-simulation"
             disabled={isRunning || isSweeping}
             className="btn btn-primary btn-sm flex items-center gap-1.5"
           >
@@ -120,13 +123,16 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div className="space-y-1">
             <div className="flex justify-between text-xs">
-              <span className="text-zinc-500">CORRUPTION LEVEL:</span>
+              <label htmlFor="season-dropout-rate" className="text-zinc-500">SENSOR DROPOUT:</label>
               <span className="font-bold text-zinc-900 dark:text-zinc-100">
                 {Math.round(dropoutRate * 100)}% DROPOUT
               </span>
             </div>
             <input
               type="range"
+              id="season-dropout-rate"
+              data-testid="season-dropout-rate"
+              aria-label="Season simulation sensor dropout rate"
               min="0"
               max="0.4"
               step="0.05"
@@ -160,13 +166,13 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
 
       {/* Results */}
       {simResult && (
-        <div className="space-y-5">
+        <div className="space-y-5" data-testid="season-results">
           {/* Side by side comparison */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Blind Farm */}
             <div className="card border-l-2 border-l-rose-500 space-y-3">
               <div className="border-b border-zinc-200 dark:border-zinc-800 pb-2 flex justify-between items-center">
-                <span className="font-bold text-xs text-rose-600 dark:text-rose-400">
+                <span className="font-bold text-xs text-rose-600 dark:text-rose-400" title="A policy without uncertainty-based safety gates.">
                   [POLICY A] CONFIDENCE-BLIND FARM
                 </span>
                 <span className="text-[10px] text-zinc-400">STANDARD POINT ML</span>
@@ -213,7 +219,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
             {/* Gated Farm */}
             <div className="card border-l-2 border-l-emerald-500 space-y-3">
               <div className="border-b border-zinc-200 dark:border-zinc-800 pb-2 flex justify-between items-center">
-                <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400" title="A policy that pauses when predictions are uncertain.">
                   [POLICY B] UNCERTAINTY-GATED TWIN
                 </span>
                 <span className="text-[10px] text-zinc-400">RULES 1–3 ARCHITECTURE</span>
@@ -269,28 +275,29 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
           {/* Bar Chart */}
           <div className="card space-y-3">
             <div className="text-xs font-bold uppercase text-zinc-500 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-              ERROR TYPE DISTRIBUTION (SIDE-BY-SIDE)
+              <div>Error comparison</div>
+              <HeadingNote>Failures by type</HeadingNote>
             </div>
 
             <div className="h-60 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={errorChartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="2 2" stroke="#71717a20" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#71717a', fontFamily: 'monospace' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#71717a', fontFamily: 'monospace' }} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="2 3" stroke="var(--border)" strokeOpacity={0.8} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: 'monospace' }} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: 'monospace' }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09090b',
-                      borderColor: '#27272a',
-                      borderRadius: '4px',
-                      color: '#fafafa',
+                      backgroundColor: 'var(--surface-raised)',
+                      borderColor: 'var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--ink)',
                       fontFamily: 'monospace',
                       fontSize: '11px',
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace' }} />
-                  <Bar dataKey="blind" name="BLIND FARM" fill="#f43f5e" />
-                  <Bar dataKey="gated" name="GATED TWIN" fill="#10b981" />
+                  <Bar dataKey="blind" name="BLIND FARM" fill="#E11D48" />
+                  <Bar dataKey="gated" name="GATED TWIN" fill="#16A34A" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -369,8 +376,9 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-2">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
-              DROPOUT SENSITIVITY SWEEP (10% TO 40%)
+              DROPOUT SENSITIVITY
             </h3>
+            <HeadingNote>Errors vs sensor loss</HeadingNote>
             <p className="text-[10px] text-zinc-500">
               Observe failure rate divergence as telemetry quality degrades
             </p>
@@ -378,6 +386,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
 
           <button
             onClick={handleRunSweep}
+            data-testid="run-dropout-sweep"
             disabled={isSweeping || isRunning}
             className="btn btn-secondary btn-sm text-[11px]"
           >
@@ -386,26 +395,26 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
         </div>
 
         {sweepPoints ? (
-          <div className="space-y-3">
+          <div className="space-y-3" data-testid="sweep-results">
             <div className="h-60 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sweepPoints} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="2 2" stroke="#71717a20" vertical={false} />
-                  <XAxis dataKey="dropoutRate" unit="%" tick={{ fontSize: 10, fill: '#71717a', fontFamily: 'monospace' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#71717a', fontFamily: 'monospace' }} />
+                  <CartesianGrid strokeDasharray="2 3" stroke="var(--border)" strokeOpacity={0.8} vertical={false} />
+                  <XAxis dataKey="dropoutRate" unit="%" tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: 'monospace' }} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: 'monospace' }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#09090b',
-                      borderColor: '#27272a',
-                      borderRadius: '4px',
-                      color: '#fafafa',
+                      backgroundColor: 'var(--surface-raised)',
+                      borderColor: 'var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--ink)',
                       fontFamily: 'monospace',
                       fontSize: '11px',
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px', fontFamily: 'monospace' }} />
-                  <Line type="monotone" dataKey="blindErrors" name="BLIND FARM" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="gatedErrors" name="GATED TWIN" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="blindErrors" name="BLIND FARM" stroke="#E11D48" strokeWidth={2} dot={{ r: 3, fill: '#E11D48' }} />
+                  <Line type="monotone" dataKey="gatedErrors" name="GATED TWIN" stroke="#16A34A" strokeWidth={2} dot={{ r: 3, fill: '#16A34A' }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

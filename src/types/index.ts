@@ -112,6 +112,9 @@ export interface SimulationConfig {
   dropoutRate: number;
   decisionConfig: DecisionConfig;
   pestParams: PestRiskParams;
+  heatSpike?: boolean;
+  droughtShock?: boolean;
+  seed?: number;
 }
 
 export interface CatastrophicError {

@@ -8,7 +8,7 @@
 [![Conformal Prediction](https://img.shields.io/badge/Conformal_Prediction-Split--Conformal-black?style=flat-square)](https://en.wikipedia.org/wiki/Conformal_prediction)
 [![License: MIT](https://img.shields.io/badge/License-MIT-black?style=flat-square)](LICENSE)
 
-> **A software-only digital twin of soil moisture and microclimate for Indian agro-ecosystems. It predicts volumetric soil moisture with split-conformal confidence bands, continuously scores late-blight (*Phytophthora infestans*) disease hazard, and only automates irrigation when it is statistically confident.**
+> **A software prototype for soil-moisture decision support. It forecasts moisture with a ridge surrogate, widens a nominal split-conformal interval using a dropout heuristic, scores a late-blight weather proxy, and gates simulated irrigation actions. It has not been validated against field outcomes.**
 
 ---
 
@@ -27,7 +27,7 @@ Standard machine learning models deployed in precision agriculture emit uncalibr
 3. **Resource Depletion:** Wasting scarce groundwater reserves and increasing pumping electricity costs.
 
 ### The AgriTwin Solution
-AgriTwin rejects the silent-failure paradigm. Instead of outputting an isolated number, the twin produces **distribution-free prediction intervals** via split-conformal inference. 
+AgriTwin demonstrates one way to expose uncertainty instead of displaying only a point forecast. The interval uses split-conformal residual calibration, with a heuristic width increase under simulated dropout. It is a research prototype, not a validated farm controller.
 
 When input telemetry degrades (e.g., packet dropout increases from 0% to 30%), **the confidence envelope widens in real-time ($<300\,\text{ms}$)**. Once uncertainty exceeds an agronomic safety bound ($\epsilon$), the digital twin's actuator engine **immediately disengages automation and requests human supervisor review**.
 
@@ -81,7 +81,7 @@ The primary operations center provides high-density, real-time observability ove
 
 ![Twin Dashboard](docs/images/dashboard.png)
 
-- **Soil Moisture Forecast Chart:** Recharts-powered interactive canvas displaying 48 hours of historical telemetry with shaded sensor dropout/glitch zones, actual ground truth, surrogate point prediction, and a 12-hour forward forecast enveloped in a 90% split-conformal confidence band.
+- **Soil Moisture Forecast Chart:** Recharts-powered interactive canvas displaying recent telemetry with shaded dropout zones, a surrogate point prediction, and a 12-hour forecast with a nominal 90% residual interval.
 - **Sensor Noise Simulator:** Real-time hardware fault injector with a 0%–40% Bernoulli packet dropout slider, $+15^\circ\text{C}$ Heat Spike toggle, and $-60\%$ Drought Shock toggle. Updates a 48-slot hardware packet status strip in real-time.
 - **Uncertainty Safety Meter:** Live telemetry gauge comparing empirical interval width against the adjustable safety limit $\epsilon$. Triggers visual alerts when the safety bound is breached.
 - **Pathogen Conflict Gauge:** Half-circle vector gauge ($0\text{--}1.0$) with a critical hazard threshold at $0.70$. Accompanied by sub-score meters for temperature suitability, sustained relative humidity, and leaf-wetness duration, plus a parameter editor popover.
@@ -124,27 +124,17 @@ Live validation metrics computed directly from client-side model residuals and e
 ![Model Evaluation](docs/images/model-evaluation.png)
 
 - **Experiment 1 (Baseline Accuracy):** Live-computed Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and Coefficient of Determination ($R^2$) on clean validation splits.
-- **Experiment 2 (Conformal Robustness):** Dual-axis evaluation demonstrating that as sensor dropout increases from 0% to 40%, the Mean Prediction Interval Width (MPIW) automatically expands while Empirical Coverage (PICP) remains bounded near the nominal $90\%$ target.
+- **Experiment 2 (Robustness):** Fixed-seed, held-out scenarios report PICP, MPIW, and MAE for 0–40% dropout, heat shock, drought shock, and a combined stress case. Results are empirical for this dataset and do not establish coverage guarantees under distribution shift.
 - **Experiment 3 (Decision Utility):** Net quantitative failure reduction percentage and simulated water savings.
 
 ---
 
 ## 3. Mathematical & Agronomic Foundations
 
-### 3.1 Split-Conformal Prediction Theory
-Standard point predictors minimize empirical risk $\hat{y} = f(x)$, but provide no finite-sample coverage guarantees. AgriTwin integrates inductive split-conformal prediction:
+### 3.1 Residual Calibration and Evaluation
+The surrogate uses chronological 60/20/20 train, calibration, and evaluation partitions. Absolute residuals from the calibration partition set the nominal 90% interval quantile. MAE, RMSE, $R^2$, PICP, and MPIW are then computed on the later untouched evaluation partition.
 
-1. **Calibration Split:** Historical observations are split into training ($\mathcal{D}_{\text{train}}$) and calibration ($\mathcal{D}_{\text{cal}}$) sets.
-2. **Nonconformity Scores:** For each calibration sample $(x_i, y_i)$, absolute residual nonconformity scores are computed:
-   $$s_i = |y_i - \hat{f}(x_i)|$$
-3. **Empirical Quantile:** Given a user-defined mis-coverage rate $\alpha = 0.10$ ($90\%$ target confidence), the $(1 - \alpha)$-th conformal quantile is computed:
-   $$\hat{q} = \text{Quantile}\left(\{s_i\}_{i=1}^{n}, \frac{\lceil(1-\alpha)(n+1)\rceil}{n}\right)$$
-4. **Adaptive Uncertainty Scaling:** To make intervals responsive to input corruption, the prediction variance $\hat{\sigma}_t$ scales with the fraction of dropped sensor readings $\delta_t$ in the active window:
-   $$\hat{\sigma}_t = \sigma_{\text{base}} \cdot (1 + 4.5 \cdot \delta_t)$$
-   The resulting prediction interval $\mathcal{C}(x_t)$ is:
-   $$\mathcal{C}(x_t) = \left[ \max\left(0, \hat{y}_t - \hat{q} \cdot \frac{\hat{\sigma}_t}{\sigma_{\text{base}}}\right), \, \min\left(0.60, \hat{y}_t + \hat{q} \cdot \frac{\hat{\sigma}_t}{\sigma_{\text{base}}}\right) \right]$$
-   Under exchangeability, this provides distribution-free coverage:
-   $$\mathbb{P}(y_t \in \mathcal{C}(x_t)) \ge 1 - \alpha$$
+At prediction time, interval width is multiplied by $1 + 4.5\delta$, where $\delta$ is the missing-reading fraction in the input window. This dropout response is a heuristic. Hourly time-series residuals are dependent, and heat/drought shocks can violate calibration assumptions, so nominal split-conformal coverage must not be described as a distribution-free guarantee here. The evaluation screen reports measured PICP on the configured holdout scenarios.
 
 ---
 
@@ -186,8 +176,8 @@ $$\text{PestRisk} = 0.30 \cdot S_{\text{temp}} + 0.35 \cdot S_{\text{rh}} + 0.35
 | Data Source | Primary Role | Description & Methodological Notice |
 | :--- | :--- | :--- |
 | **Open-Meteo API** | Live Weather Telemetry | Free, keyless meteorological API providing hourly temperature, humidity, dew point, rainfall, shortwave radiation, reference $\text{ET}_0$, VPD, and volumetric soil moisture (0–7 cm). |
-| **ECMWF ERA5-Land** | Model Target Target | Reanalysis land-surface model dataset at $\sim 9\,\text{km}$ resolution. **Honesty notice:** ERA5-Land is an atmospheric-land reanalysis simulation, not a direct field sensor. |
-| **ISMN IIT Kanpur** | In-Situ Ground Truth | International Soil Moisture Network monitoring station located at IIT Kanpur (26.51°N, 80.23°E). Supports optional CSV ground-truth upload. |
+| **ECMWF ERA5-Land** | Candidate model target | Not ingested by the current prototype. The reanalysis is a model product at $\sim 9\,\text{km}$ resolution, not a direct field sensor. |
+| **ISMN IIT Kanpur** | Candidate in-situ ground truth | The About screen's CSV control counts rows only; no values are parsed or compared with forecasts. |
 | **Synthetic Season** | Offline Fallback | Built-in 90-day hourly monsoon season generator capturing Indian monsoon onset, diurnal evaporative flux, and bucket soil physics. |
 
 ### Supported Agro-Climatic Presets
@@ -201,17 +191,13 @@ $$\text{PestRisk} = 0.30 \cdot S_{\text{temp}} + 0.35 \cdot S_{\text{rh}} + 0.35
 
 ---
 
-## 5. Experimental Benchmark Results
+## 5. Prototype Experiments and Validation Limits
 
-Running the full 90-day simulation ($2,160$ simulated hours) at $20\%$ random sensor packet dropout yields the following verified results:
+The Model Evaluation screen computes its metrics from the selected telemetry series. Its robustness matrix uses fixed seeds and compares clean telemetry, 10–40% random dropout, a +15°C heat shock, a −60% soil-moisture shock, and a combined stress case. It reports the number of affected windows, PICP, MPIW, and MAE. The Season Simulation compares two control policies against synthetic or selected telemetry and should be interpreted as a software experiment, not measured field impact.
 
-| Evaluation Dimension | Policy A: Confidence-Blind Farm | Policy B: Uncertainty-Gated Twin | Measured Impact |
-| :--- | :---: | :---: | :--- |
-| **Blight Contaminations** | $14\text{--}28\text{ incidents}$ | **$0\text{ incidents}$** | **$100\%$ eliminated** (Rule 2 Pest Conflict) |
-| **False-Dry Over-watering** | $25\text{--}40\text{ incidents}$ | **$2\text{--}5\text{ incidents}$** | **$>85\%$ reduction** (Rule 3 Safety Brake) |
-| **Water Volume Expended** | $\approx 2,450\,\text{kL/ha}$ | $\approx 1,750\,\text{kL/ha}$ | **$\approx 28\%$ water conserved** |
-| **Autonomous Control Errors**| $45\text{--}70\text{ total}$ | **$3\text{--}7\text{ total}$** | **$>88\%$ net failure reduction** |
-| **Human Escalations** | $0$ (Silent failure) | **$12\text{--}25\text{ reviews}$** | Safe human-in-the-loop abstention |
+The late-blight panel includes four constructed microclimate profiles as rule-consistency checks. These checks verify that the coded thresholds produce the expected active/inactive label. They do not test disease incidence, crop loss, or whether suspending irrigation prevents spread. The default high-humidity threshold is 90%; [AHDB guidance](https://horticulture.ahdb.org.uk/knowledge-library/phytophthora-infestans) describes sporulation as favored around RH above 90% and 10–20°C, while infection dynamics also depend on leaf wetness, host, and pathogen conditions. See also [Hartill et al.'s leaf-wetness study](https://doi.org/10.1080/01140671.1990.10428093). Thresholds and weights still need local crop, cultivar, and field validation.
+
+The ISMN CSV control currently counts data rows only; it does not parse observations or calculate forecast errors. ERA5-Land is a proposed source, not an integrated ingestion path. Accordingly, no field-validated agronomic or water-savings result is claimed.
 
 ---
 

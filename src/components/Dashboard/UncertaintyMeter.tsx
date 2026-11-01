@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { HeadingNote } from '../HeadingNote';
 
 interface Props {
   intervalWidth: number;
@@ -24,6 +25,7 @@ export const UncertaintyMeter: React.FC<Props> = ({
           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             UNCERTAINTY SAFETY BRAKE (ε)
           </h3>
+          <HeadingNote title="ε is the maximum permitted prediction interval width.">Prediction range vs limit</HeadingNote>
           <p className="text-[10px] text-zinc-500">
             Split-conformal prediction interval width vs threshold
           </p>
@@ -43,7 +45,7 @@ export const UncertaintyMeter: React.FC<Props> = ({
       {/* Main Readout */}
       <div className="flex items-baseline justify-between pt-1">
         <div>
-          <div className="text-[10px] uppercase text-zinc-400">INTERVAL WIDTH (90% CONFIDENCE)</div>
+          <div className="text-[10px] uppercase text-zinc-400">NOMINAL 90% INTERVAL WIDTH</div>
           <div className={`text-2xl font-bold font-mono tracking-tight ${isOverThreshold ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
             {(intervalWidth * 100).toFixed(1)}%
             <span className="text-xs font-normal text-zinc-400 ml-1.5 font-sans">
@@ -99,6 +101,8 @@ export const UncertaintyMeter: React.FC<Props> = ({
         </div>
 
         <input
+          data-testid="dashboard-uncertainty-limit"
+          aria-label="Dashboard uncertainty limit"
           type="range"
           min="0.04"
           max="0.25"
@@ -109,8 +113,8 @@ export const UncertaintyMeter: React.FC<Props> = ({
 
         <p className="text-[10px] text-zinc-500 pt-0.5 font-sans">
           {isOverThreshold
-            ? 'Actuators safely LOCKED. Epistemic variance indicates noisy or corrupted readings.'
-            : 'Confidence verified. Autonomous actions permitted subject to soil and pathogen rules.'}
+            ? 'Actuators LOCKED by the uncertainty threshold. Manual review is required.'
+            : 'Interval width is below the configured threshold. Soil and pathogen rules still gate irrigation.'}
         </p>
       </div>
     </div>
