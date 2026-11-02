@@ -29,6 +29,27 @@ test('3D field responds to telemetry corruption and evaluation shows stress expe
   await expect(field).toHaveAttribute('aria-label', /sensor dropout 0 percent/);
   await expect(page.locator('[data-sensor-gap="true"]')).toHaveCount(0);
 
+  await page.getByTestId('camera-top').click();
+  await expect(page.getByTestId('camera-top')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('zoom-in').click();
+  await expect(page.getByText('125%', { exact: true })).toBeVisible();
+  await page.getByTestId('zoom-out').click();
+  await expect(page.getByText('100%', { exact: true })).toBeVisible();
+  const initialViewBox = await field.getAttribute('viewBox');
+  const fieldBox = await field.boundingBox();
+  if (!fieldBox) throw new Error('Field viewport was not measurable');
+  await page.mouse.move(fieldBox.x + fieldBox.width * 0.42, fieldBox.y + fieldBox.height * 0.68);
+  await page.mouse.down();
+  await page.mouse.move(fieldBox.x + fieldBox.width * 0.5, fieldBox.y + fieldBox.height * 0.74);
+  await page.mouse.up();
+  await expect(field).not.toHaveAttribute('viewBox', initialViewBox!);
+  await page.getByTestId('reset-field-view').click();
+  await expect(field).toHaveAttribute('viewBox', initialViewBox!);
+  await page.getByTestId('layer-health').click();
+  await expect(page.getByTestId('layer-health')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('field-cell').first().click();
+  await expect(page.getByTestId('selected-field-item')).toBeVisible();
+
   await page.getByTestId('dropout-slider').focus();
   await page.getByTestId('dropout-slider').press('End');
   await expect(page.getByText('40%', { exact: true })).toBeVisible();

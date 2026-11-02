@@ -7,12 +7,14 @@ interface Props {
   pestRisk: PestRiskResult;
   params: PestRiskParams;
   onParamsChange: (params: PestRiskParams) => void;
+  compact?: boolean;
 }
 
 export const PestRiskGauge: React.FC<Props> = ({
   pestRisk,
   params,
   onParamsChange,
+  compact = false,
 }) => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [localParams, setLocalParams] = useState<PestRiskParams>(params);
@@ -61,6 +63,44 @@ export const PestRiskGauge: React.FC<Props> = ({
     onParamsChange(localParams);
     closeSettings();
   };
+
+  const settingsDialog = showModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
+      <div role="dialog" aria-modal="true" aria-labelledby="pest-dialog-title" className="bg-white dark:bg-zinc-950 rounded-lg max-w-md w-full p-5 border border-zinc-300 dark:border-zinc-800 shadow-2xl space-y-3 font-mono text-xs">
+        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+          <div>
+            <h3 id="pest-dialog-title" className="font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">Pathogen settings</h3>
+            <HeadingNote>Risk model inputs</HeadingNote>
+          </div>
+          <button aria-label="Close pathogen settings" onClick={closeSettings} className="text-zinc-400 hover:text-zinc-900">
+            [ESC]
+          </button>
+        </div>
+
+        <p className="text-[11px] text-zinc-500 font-sans">Score = 0.30 × TempWindow + 0.35 × HumidityWindow + 0.35 × LeafWetDuration.</p>
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <div><label className="text-[10px] text-zinc-400 block mb-0.5">TEMP MIN (°C)</label><input aria-label="Minimum temperature" data-testid="pest-temp-low" ref={firstParameterRef} type="number" value={localParams.tempLow} onChange={(e) => setLocalParams({ ...localParams, tempLow: Number(e.target.value) })} className="input-field" /></div>
+          <div><label className="text-[10px] text-zinc-400 block mb-0.5">TEMP MAX (°C)</label><input aria-label="Maximum temperature" data-testid="pest-temp-high" type="number" value={localParams.tempHigh} onChange={(e) => setLocalParams({ ...localParams, tempHigh: Number(e.target.value) })} className="input-field" /></div>
+          <div><label className="text-[10px] text-zinc-400 block mb-0.5">RH THRESHOLD (%)</label><input aria-label="Humidity threshold" data-testid="pest-rh-threshold" type="number" value={localParams.rhThreshold} onChange={(e) => setLocalParams({ ...localParams, rhThreshold: Number(e.target.value) })} className="input-field" /></div>
+          <div><label className="text-[10px] text-zinc-400 block mb-0.5">CRITICAL HOURS (h)</label><input aria-label="Leaf wetness hours" data-testid="pest-leaf-wet-hours" type="number" value={localParams.leafWetHours} onChange={(e) => setLocalParams({ ...localParams, leafWetHours: Number(e.target.value) })} className="input-field" /></div>
+        </div>
+
+        {parameterError && <p role="alert" className="text-[11px] text-rose-700 dark:text-rose-300">{parameterError}</p>}
+        <div className="flex justify-end gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800"><button onClick={closeSettings} className="btn btn-secondary btn-sm">CANCEL</button><button onClick={handleSaveParams} className="btn btn-primary btn-sm flex items-center gap-1"><Check className="w-3 h-3" /> APPLY</button></div>
+      </div>
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex items-center justify-between gap-2 font-mono">
+        <div><div className="text-[9px] uppercase tracking-wider text-zinc-500">Pathogen risk</div><div className="mt-0.5 text-xs font-semibold text-zinc-100">{(score * 100).toFixed(0)}% <span className="font-normal text-zinc-400">· threshold 70%</span></div></div>
+        <button ref={formulaButtonRef} aria-haspopup="dialog" aria-expanded={showModal} onClick={() => { setLocalParams(params); setParameterError(null); setShowModal(true); }} className="rounded border border-white/15 px-2 py-1 text-[10px] text-zinc-200 hover:bg-zinc-800"><HelpCircle className="mr-1 inline h-3 w-3" /> FORMULA</button>
+        {settingsDialog}
+      </div>
+    );
+  }
 
   return (
     <div className="card space-y-3 font-mono">
@@ -195,85 +235,7 @@ export const PestRiskGauge: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Popover / Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans">
-          <div role="dialog" aria-modal="true" aria-labelledby="pest-dialog-title" className="bg-white dark:bg-zinc-950 rounded-lg max-w-md w-full p-5 border border-zinc-300 dark:border-zinc-800 shadow-2xl space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-              <div>
-                <h3 id="pest-dialog-title" className="font-bold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100">Pathogen settings</h3>
-                <HeadingNote>Risk model inputs</HeadingNote>
-              </div>
-              <button aria-label="Close pathogen settings" onClick={closeSettings} className="text-zinc-400 hover:text-zinc-900">
-                [ESC]
-              </button>
-            </div>
-
-            <p className="text-[11px] text-zinc-500 font-sans">
-              Score = 0.30 × TempWindow + 0.35 × HumidityWindow + 0.35 × LeafWetDuration.
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-0.5">TEMP MIN (°C)</label>
-                <input
-                  aria-label="Minimum temperature"
-                  data-testid="pest-temp-low"
-                  ref={firstParameterRef}
-                  type="number"
-                  value={localParams.tempLow}
-                  onChange={(e) => setLocalParams({ ...localParams, tempLow: Number(e.target.value) })}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-0.5">TEMP MAX (°C)</label>
-                <input
-                  aria-label="Maximum temperature"
-                  data-testid="pest-temp-high"
-                  type="number"
-                  value={localParams.tempHigh}
-                  onChange={(e) => setLocalParams({ ...localParams, tempHigh: Number(e.target.value) })}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-0.5">RH THRESHOLD (%)</label>
-                <input
-                  aria-label="Humidity threshold"
-                  data-testid="pest-rh-threshold"
-                  type="number"
-                  value={localParams.rhThreshold}
-                  onChange={(e) => setLocalParams({ ...localParams, rhThreshold: Number(e.target.value) })}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-0.5">CRITICAL HOURS (h)</label>
-                <input
-                  aria-label="Leaf wetness hours"
-                  data-testid="pest-leaf-wet-hours"
-                  type="number"
-                  value={localParams.leafWetHours}
-                  onChange={(e) => setLocalParams({ ...localParams, leafWetHours: Number(e.target.value) })}
-                  className="input-field"
-                />
-              </div>
-            </div>
-
-            {parameterError && <p role="alert" className="text-[11px] text-rose-700 dark:text-rose-300">{parameterError}</p>}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-              <button onClick={closeSettings} className="btn btn-secondary btn-sm">
-                CANCEL
-              </button>
-              <button onClick={handleSaveParams} className="btn btn-primary btn-sm flex items-center gap-1">
-                <Check className="w-3 h-3" /> APPLY
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {settingsDialog}
     </div>
   );
 };

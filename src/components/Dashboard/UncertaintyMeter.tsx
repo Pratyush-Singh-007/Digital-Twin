@@ -6,17 +6,42 @@ interface Props {
   intervalWidth: number;
   epsilon: number;
   setEpsilon: (val: number) => void;
+  compact?: boolean;
 }
 
 export const UncertaintyMeter: React.FC<Props> = ({
   intervalWidth,
   epsilon,
   setEpsilon,
+  compact = false,
 }) => {
   const isOverThreshold = intervalWidth >= epsilon;
   const ratio = Math.min(1.5, intervalWidth / epsilon);
   const barPercent = Math.min(100, (intervalWidth / 0.30) * 100);
   const epsilonPercent = Math.min(100, (epsilon / 0.30) * 100);
+
+  if (compact) {
+    return (
+      <div className="font-mono">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[9px] uppercase tracking-wider text-zinc-500">Safety limit ε</span>
+          <span className="text-[10px] font-semibold text-zinc-100">{(intervalWidth * 100).toFixed(1)}% / {(epsilon * 100).toFixed(1)}%</span>
+        </div>
+        <input
+          data-testid="dashboard-uncertainty-limit"
+          aria-label="Dashboard uncertainty limit"
+          type="range"
+          min="0.04"
+          max="0.25"
+          step="0.01"
+          value={epsilon}
+          onChange={(e) => setEpsilon(parseFloat(e.target.value))}
+          className="mt-1 accent-zinc-100"
+        />
+        <p className="mt-1 text-[10px] leading-snug text-zinc-400">Sets the maximum confidence interval allowed before automation is locked.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="card space-y-3 font-mono">
