@@ -129,17 +129,17 @@ export const SensorNoisePanel: React.FC<Props> = ({
           <span>{corruptedInWindow}/48 DROPPED ({corruptionPercent}%)</span>
         </div>
 
-        <div className="grid grid-cols-24 sm:grid-cols-48 gap-0.5 p-1 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800">
+        <div className="flex gap-1 p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 h-10 items-stretch">
           {telemetryWindow.map((pt, i) => {
             const isDropped = pt === null || corruptedIndices.has(startIndex + i);
             return (
               <div
                 key={`telemetry-${i}`}
                 title={`t-${stripLength - i}h: ${isDropped ? 'PACKET CORRUPTED/DROPPED' : 'VALID'}`}
-                className={`h-3 rounded-xs transition-colors ${
+                className={`flex-1 rounded-[1px] transition-colors ${
                   isDropped
                     ? 'bg-rose-500 hover:bg-rose-400'
-                    : 'bg-zinc-800 dark:bg-zinc-200 hover:bg-zinc-600 dark:hover:bg-zinc-400'
+                    : 'bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400 dark:hover:bg-zinc-600'
                 }`}
               />
             );

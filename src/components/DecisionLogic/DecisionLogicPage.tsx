@@ -353,19 +353,19 @@ export const DecisionLogicPage: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-12 sm:grid-cols-24 lg:grid-cols-48 gap-0.5 p-1 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800">
+        <div className="flex gap-1 p-2 bg-zinc-100 dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 h-9 items-stretch">
           {timelineHistory.map((entry, idx) => {
             const dec = entry.decision;
-            let bgColor = 'bg-zinc-300 dark:bg-zinc-700';
-            if (dec.action === 'LOCKED') bgColor = 'bg-rose-500';
-            else if (dec.action === 'SUSPENDED' && dec.ruleFired === 2) bgColor = 'bg-amber-500';
-            else if (dec.action === 'IRRIGATE') bgColor = 'bg-emerald-500';
+            let bgColor = 'bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400 dark:hover:bg-zinc-600';
+            if (dec.action === 'LOCKED') bgColor = 'bg-rose-500 hover:bg-rose-400';
+            else if (dec.action === 'SUSPENDED' && dec.ruleFired === 2) bgColor = 'bg-amber-500 hover:bg-amber-400';
+            else if (dec.action === 'IRRIGATE') bgColor = 'bg-emerald-500 hover:bg-emerald-400';
 
             return (
               <div
                 key={`timeline-${idx}`}
                 title={`t=${entry.timeLabel}: ${dec.action} (Rule ${dec.ruleFired})`}
-                className={`h-6 rounded-xs cursor-pointer ${bgColor}`}
+                className={`flex-1 rounded-[1px] cursor-pointer transition-colors ${bgColor}`}
               />
             );
           })}
