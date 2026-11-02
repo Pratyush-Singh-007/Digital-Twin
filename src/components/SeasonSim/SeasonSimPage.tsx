@@ -67,7 +67,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
   const errorChartData = simResult
     ? [
         {
-          name: 'Pest Vector Contamination',
+          name: 'Wetness-window irrigation (research proxy)',
           blind: simResult.blindFarm.pestIrrigationErrors,
           gated: simResult.gatedFarm.pestIrrigationErrors,
         },
@@ -118,6 +118,8 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
             )}
           </button>
         </div>
+
+        <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">Training simulation only: wetness-window counts are a research proxy, not disease outcomes. The current field workflow keeps this advisory outside its irrigation decision path.</p>
 
         {/* Dropout Slider */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
@@ -198,7 +200,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
 
               <div className="space-y-1 text-xs text-zinc-600 dark:text-zinc-400 font-sans border-t border-zinc-100 dark:border-zinc-800 pt-2">
                 <div className="flex justify-between font-mono text-[11px]">
-                  <span>• Blight Contaminations:</span>
+                  <span>• Wetness-window events:</span>
                   <strong className="text-rose-600">{simResult.blindFarm.pestIrrigationErrors}</strong>
                 </div>
                 <div className="flex justify-between font-mono text-[11px]">
@@ -253,7 +255,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
 
               <div className="space-y-1 text-xs text-zinc-600 dark:text-zinc-400 font-sans border-t border-zinc-100 dark:border-zinc-800 pt-2">
                 <div className="flex justify-between font-mono text-[11px]">
-                  <span>• Blight Contaminations:</span>
+                  <span>• Wetness-window events:</span>
                   <strong className="text-emerald-600">{simResult.gatedFarm.pestIrrigationErrors}</strong>
                 </div>
                 <div className="flex justify-between font-mono text-[11px]">
@@ -316,7 +318,7 @@ export const SeasonSimPage: React.FC<Props> = ({ cleanData }) => {
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono text-[11px]">
                 <tr>
-                  <td className="py-2 px-3 font-sans">Blight Contaminations (Risk &gt; 0.70)</td>
+                  <td className="py-2 px-3 font-sans">Wetness-window events (research proxy &gt; 0.70)</td>
                   <td className="py-2 px-3 text-rose-600 font-bold">{simResult.blindFarm.pestIrrigationErrors}</td>
                   <td className="py-2 px-3 text-emerald-600 font-bold">{simResult.gatedFarm.pestIrrigationErrors}</td>
                   <td className="py-2 px-3 text-emerald-600">

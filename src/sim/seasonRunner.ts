@@ -95,10 +95,10 @@ export function runSeasonSimulation(
     // Agronomic risk scored from telemetry
     const pestRisk = computePestRisk(windowWithCorruption, config.pestParams);
 
-    // Ground truth pest risk scored from CLEAN data
+    // Research wetness proxy scored from CLEAN data (not disease ground truth).
     const truePestRisk = computePestRisk(cleanWindow, config.pestParams);
 
-    // Decision: Blind Farm (ignores uncertainty & pest conflict)
+    // Decision: Blind Farm (ignores uncertainty)
     const blindDecision = evaluateBlindDecision(
       observedMoisture,
       prediction.mean,
@@ -139,7 +139,7 @@ export function runSeasonSimulation(
         blindErrors.push({
           type: 'pest_irrigation',
           hour: i,
-          detail: `Irrigated during active blight condition (Pest risk: ${(truePestRisk.score * 100).toFixed(0)}%)`,
+          detail: `Irrigated during a high wetness-proxy window (${(truePestRisk.score * 100).toFixed(0)}%); research metric only`,
         });
       } else if (isActuallyWet) {
         blindErrors.push({
@@ -164,7 +164,7 @@ export function runSeasonSimulation(
         gatedErrors.push({
           type: 'pest_irrigation',
           hour: i,
-          detail: `Irrigated during high pest danger window`,
+          detail: 'Irrigated during high wetness-proxy window; research metric only',
         });
       } else if (isActuallyWet) {
         gatedErrors.push({
@@ -183,7 +183,7 @@ export function runSeasonSimulation(
         });
       }
     }
-    // If LOCKED or SUSPENDED by Rule 2/3, it is safe abstention, NOT an autonomous control error!
+    // A LOCKED/hold outcome is a safe abstention, not an autonomous control error.
   }
 
   const countErrors = (errs: CatastrophicError[]) => ({

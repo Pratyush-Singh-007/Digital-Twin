@@ -139,7 +139,7 @@ export const UncertaintyMeter: React.FC<Props> = ({
         <p className="text-[10px] text-zinc-500 pt-0.5 font-sans">
           {isOverThreshold
             ? 'Actuators LOCKED by the uncertainty threshold. Manual review is required.'
-            : 'Interval width is below the configured threshold. Soil and pathogen rules still gate irrigation.'}
+            : 'Interval width is below the configured threshold. This remains a simulated decision preview, not a live actuator command.'}
         </p>
       </div>
     </div>

@@ -15,7 +15,7 @@ const hourly = {
   soil_temperature_0_to_7cm: mockTimes.map(() => 19),
 };
 
-test('3D field responds to telemetry corruption and evaluation shows stress experiments', async ({ page }) => {
+test('3D field responds to telemetry corruption', async ({ page }) => {
   await page.route('https://api.open-meteo.com/**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -27,27 +27,30 @@ test('3D field responds to telemetry corruption and evaluation shows stress expe
   await expect(field).toBeVisible();
   await expect(field).toHaveAttribute('aria-label', /Soil moisture/);
   await expect(field).toHaveAttribute('aria-label', /sensor dropout 0 percent/);
+  await expect(page.getByTestId('operational-readiness')).toContainText('Prototype only');
+  await expect(page.getByTestId('operational-readiness')).toContainText('not 12 independent probes');
   await expect(page.locator('[data-sensor-gap="true"]')).toHaveCount(0);
 
   await page.getByTestId('camera-top').click();
   await expect(page.getByTestId('camera-top')).toHaveAttribute('aria-pressed', 'true');
   await page.getByTestId('zoom-in').click();
-  await expect(page.getByText('125%', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('field-zoom-level')).toHaveText('125%');
   await page.getByTestId('zoom-out').click();
-  await expect(page.getByText('100%', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('field-zoom-level')).toHaveText('100%');
   const initialViewBox = await field.getAttribute('viewBox');
   const fieldBox = await field.boundingBox();
   if (!fieldBox) throw new Error('Field viewport was not measurable');
-  await page.mouse.move(fieldBox.x + fieldBox.width * 0.42, fieldBox.y + fieldBox.height * 0.68);
+  await page.mouse.move(fieldBox.x + fieldBox.width * 0.55, fieldBox.y + fieldBox.height * 0.75);
   await page.mouse.down();
-  await page.mouse.move(fieldBox.x + fieldBox.width * 0.5, fieldBox.y + fieldBox.height * 0.74);
+  await page.mouse.move(fieldBox.x + fieldBox.width * 0.6, fieldBox.y + fieldBox.height * 0.8);
   await page.mouse.up();
   await expect(field).not.toHaveAttribute('viewBox', initialViewBox!);
   await page.getByTestId('reset-field-view').click();
   await expect(field).toHaveAttribute('viewBox', initialViewBox!);
   await page.getByTestId('layer-health').click();
   await expect(page.getByTestId('layer-health')).toHaveAttribute('aria-pressed', 'true');
-  await page.getByTestId('field-cell').first().click();
+  await page.waitForTimeout(50);
+  await page.getByRole('button', { name: /Plot 1,/ }).click();
   await expect(page.getByTestId('selected-field-item')).toBeVisible();
 
   await page.getByTestId('dropout-slider').focus();
@@ -55,12 +58,6 @@ test('3D field responds to telemetry corruption and evaluation shows stress expe
   await expect(page.getByText('40%', { exact: true })).toBeVisible();
   await expect(field).toHaveAttribute('aria-label', /sensor dropout 40 percent/);
   await expect.poll(() => page.locator('[data-sensor-gap="true"]').count()).toBeGreaterThan(0);
-  await expect(page.getByTestId('field-status')).toHaveText(/SAFETY BRAKE|DISEASE ALERT/);
+  await expect(page.getByTestId('field-status')).toHaveText(/SAFETY BRAKE|WETNESS ADVISORY/);
 
-  await page.getByTestId('pages-menu-button').click();
-  await page.getByRole('button', { name: /Evaluation/ }).click();
-  await expect(page.getByTestId('robustness-row')).toHaveCount(8);
-  await expect(page.getByText('Heat shock (+15°C)')).toBeVisible();
-  await expect(page.getByText('Drought shock (−60%)')).toBeVisible();
-  await expect(page.getByTestId('agronomic-validation')).toContainText('4/4 constructed scenarios');
 });

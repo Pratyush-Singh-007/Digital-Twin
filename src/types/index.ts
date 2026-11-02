@@ -88,7 +88,9 @@ export type ActuatorAction = 'IRRIGATE' | 'SUSPENDED' | 'LOCKED';
 export interface DecisionConfig {
   dryThreshold: number;       // m³/m³  below this = "dry"
   epsilon: number;            // uncertainty threshold (interval width)
-  pestThreshold: number;      // pest risk threshold (default 0.70)
+  pestThreshold: number;      // wetness-proxy threshold (default 0.70)
+  /** Research-only. Kept off until a crop-specific disease model is validated. */
+  pathogenGateEnabled?: boolean;
 }
 
 export interface Decision {
@@ -99,6 +101,8 @@ export interface Decision {
   predictedMoisture: number;
   uncertainty: number;        // interval width
   pestRisk: number;
+  /** Context for a human scout; never an irrigation command on its own. */
+  advisory?: string;
   timestamp: number;
 }
 
@@ -151,7 +155,7 @@ export interface DropoutSweepPoint {
 }
 
 // ─── UI State ──────────────────────────────────────────────────────
-export type TabId = 'dashboard' | 'decision' | 'simulation' | 'evaluation' | 'about';
+export type TabId = 'dashboard' | 'decision' | 'simulation' | 'about';
 
 export type DataSourceStatus = 'live' | 'offline' | 'loading' | 'error';
 

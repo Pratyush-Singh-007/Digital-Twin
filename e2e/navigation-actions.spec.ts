@@ -24,7 +24,7 @@ async function mockWeather(page: Page, shouldFail: () => boolean = () => false) 
 
 async function openPage(page: Page, name: RegExp) {
   await page.getByTestId('pages-menu-button').click();
-  await page.getByRole('button', { name }).click();
+  await page.locator('#pages-menu').getByRole('button', { name }).click();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   const headingCount = await page.locator('h1, h2, h3').count();
   const explanationCount = await page.getByTestId('heading-note').count();
@@ -52,19 +52,17 @@ test('Dashboard and Pages navigation works on desktop and mobile with keyboard d
   await expect(page.getByText('Irrigation safety checks').first()).toBeVisible();
   await openPage(page, /Simulation/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Simulation');
-  await openPage(page, /Evaluation/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Evaluation');
   await openPage(page, /Data & About/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Data & About');
-  await page.getByRole('button', { name: 'Dashboard' }).click();
+  await page.locator('aside').getByRole('button', { name: 'Dashboard', exact: true }).click();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.locator('header').getByRole('button', { name: 'Dashboard', exact: true })).toBeVisible();
   await pages.click();
-  await page.getByRole('button', { name: /Simulation/ }).click();
+  await page.locator('#pages-menu').getByRole('button', { name: /Simulation/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Simulation' })).toBeVisible();
   await pages.click();
-  await page.getByRole('heading', { level: 1 }).click();
+  await page.keyboard.press('Escape');
   await expect(pages).toHaveAttribute('aria-expanded', 'false');
 });
 
@@ -139,7 +137,7 @@ test('dashboard controls update the data view, settings, and operator override',
   await expect(uncertainty).toHaveValue('0.25');
 
   await page.getByRole('button', { name: /FORMULA/ }).click();
-  await expect(page.getByRole('dialog', { name: 'Pathogen settings' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Microclimate advisory settings' })).toBeVisible();
   await page.getByTestId('pest-temp-low').fill('35');
   await page.getByTestId('pest-temp-high').fill('20');
   await page.getByRole('button', { name: 'APPLY' }).click();
@@ -154,7 +152,7 @@ test('dashboard controls update the data view, settings, and operator override',
   await expect(page.getByTestId('pest-temp-low')).toHaveValue('8');
   await page.getByRole('button', { name: 'CANCEL' }).click();
   await page.getByRole('button', { name: /FORMULA/ }).click();
-  await page.getByRole('button', { name: 'Close pathogen settings' }).click();
+  await page.getByRole('button', { name: 'Close microclimate advisory settings' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /FORMULA/ })).toBeFocused();
 
@@ -200,9 +198,6 @@ test('decision thresholds and simulation runs produce visible results', async ({
   await page.getByTestId('run-dropout-sweep').click();
   await expect(page.getByTestId('sweep-results')).toBeVisible({ timeout: 15000 });
 
-  await openPage(page, /Evaluation/);
-  await expect(page.getByTestId('robustness-row')).toHaveCount(8);
-  await expect(page.getByTestId('agronomic-validation')).toContainText('constructed scenarios match');
 });
 
 test('guided walkthrough resets the baseline, navigates steps, changes pages, and closes', async ({ page }) => {

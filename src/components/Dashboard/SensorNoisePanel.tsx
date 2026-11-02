@@ -4,6 +4,8 @@ import type { WeatherDataPoint } from '../../types';
 import { HeadingNote } from '../HeadingNote';
 
 interface Props {
+  sensorCount: number;
+  setSensorCount: (count: number) => void;
   dropoutRate: number;
   setDropoutRate: (rate: number) => void;
   heatSpike: boolean;
@@ -17,6 +19,8 @@ interface Props {
 }
 
 export const SensorNoisePanel: React.FC<Props> = ({
+  sensorCount,
+  setSensorCount,
   dropoutRate,
   setDropoutRate,
   heatSpike,
@@ -88,6 +92,20 @@ export const SensorNoisePanel: React.FC<Props> = ({
           <span>20%</span>
           <span>30%</span>
           <span>40% [SEVERE]</span>
+        </div>
+      </div>
+
+      <div className="space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">Simulated sensor network</div>
+            <p className="mt-0.5 text-[10px] text-zinc-500">Add or remove field nodes (1–24). The twin reallocates the visible zones.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button type="button" data-testid="remove-sensor" aria-label="Remove one simulated sensor" disabled={sensorCount <= 1} onClick={() => setSensorCount(sensorCount - 1)} className="inline-flex h-8 w-8 items-center justify-center rounded border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">−</button>
+            <output data-testid="simulated-sensor-count" aria-live="polite" className="min-w-16 text-center font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100">{sensorCount} sensors</output>
+            <button type="button" data-testid="add-sensor" aria-label="Add one simulated sensor" disabled={sensorCount >= 24} onClick={() => setSensorCount(sensorCount + 1)} className="inline-flex h-8 w-8 items-center justify-center rounded border border-zinc-300 text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">+</button>
+          </div>
         </div>
       </div>
 

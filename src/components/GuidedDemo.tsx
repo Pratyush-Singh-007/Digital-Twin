@@ -38,7 +38,7 @@ export const GuidedDemo: React.FC<Props> = ({
       title: 'STEP 1: BASELINE CLEAN TELEMETRY',
       subtitle: 'Normal sensor readings',
       description:
-        'The prototype receives uncorrupted telemetry. Its nominal 90% interval is narrow for this sample, below the configured safety threshold. The rule engine may permit irrigation if the soil and pathogen checks also pass.',
+        'The prototype receives uncorrupted telemetry. Its nominal 90% interval is narrow for this sample, below the configured safety threshold. The scenario preview may permit irrigation when the scenario moisture threshold is crossed.',
       highlightText: 'Confidence band is narrow; uncertainty < ε.',
       action: () => {
         onSetTab('dashboard');
@@ -70,11 +70,11 @@ export const GuidedDemo: React.FC<Props> = ({
       },
     },
     {
-      title: 'STEP 4: PATHOGEN CONFLICT → SUSPENDED',
-      subtitle: 'Disease risk conflicts',
+      title: 'STEP 4: WETNESS ADVISORY → SCOUT',
+      subtitle: 'Microclimate scouting cue',
       description:
-        'When soil is dry but microclimate pathogen risk exceeds 0.70, Rule 2 halts irrigation to prevent amplifying blight spores.',
-      highlightText: 'SUSPENDED: Pathogen risk takes priority over soil dry trigger.',
+        'The microclimate wetness score is a scouting cue only. It can direct a field inspection, but it never diagnoses disease or changes the irrigation preview.',
+      highlightText: 'ADVISORY: inspect canopy conditions; no crop-specific disease gate is enabled.',
       action: () => {
         onSetTab('dashboard');
         onReset();

@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   GitBranch,
   FlaskConical,
-  BarChart3,
   Info,
   Moon,
   Sun,
@@ -44,7 +43,6 @@ const destinations = [
   { id: 'dashboard' as TabId, label: 'Dashboard', description: 'Live field conditions', icon: LayoutDashboard },
   { id: 'decision' as TabId, label: 'Decisions', description: 'Irrigation safety checks', icon: GitBranch },
   { id: 'simulation' as TabId, label: 'Simulation', description: 'Season outcomes', icon: FlaskConical },
-  { id: 'evaluation' as TabId, label: 'Evaluation', description: 'Model performance', icon: BarChart3 },
   { id: 'about' as TabId, label: 'Data & About', description: 'Sources and limits', icon: Info },
 ];
 
@@ -157,7 +155,6 @@ export const Layout: React.FC<Props> = ({
     dashboard: { title: 'Dashboard', description: 'Live field conditions' },
     decision: { title: 'Decisions', description: 'Irrigation safety checks' },
     simulation: { title: 'Simulation', description: 'Season outcomes' },
-    evaluation: { title: 'Evaluation', description: 'Model performance' },
     about: { title: 'Data & About', description: 'Sources and limitations' },
   };
   const currentPage = pageCopy[activeTab];

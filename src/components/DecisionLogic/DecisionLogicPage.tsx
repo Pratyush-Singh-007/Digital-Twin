@@ -6,7 +6,6 @@ import { evaluateDecision } from '../../decision/rules';
 import {
   GitBranch,
   ShieldAlert,
-  AlertTriangle,
   CheckCircle2,
   Sliders,
   ArrowDown,
@@ -58,12 +57,12 @@ export const DecisionLogicPage: React.FC<Props> = ({
       dryThreshold,
       epsilon,
       pestThreshold: 0.70,
+      pathogenGateEnabled: false,
     });
   }, [latestMoisture, currentPrediction, currentPestRisk, dryThreshold, epsilon]);
 
   const currentUncertainty = currentPrediction.upper - currentPrediction.lower;
   const isRule3Active = liveDecision.ruleFired === 3;
-  const isRule2Active = liveDecision.ruleFired === 2;
   const isRule1Active = liveDecision.ruleFired === 1 && liveDecision.action === 'IRRIGATE';
   const isAdequateActive = liveDecision.ruleFired === 1 && liveDecision.action === 'SUSPENDED';
 
@@ -89,6 +88,7 @@ export const DecisionLogicPage: React.FC<Props> = ({
         dryThreshold,
         epsilon,
         pestThreshold: 0.70,
+        pathogenGateEnabled: false,
       });
 
       const pt = cleanData[i] || { time: new Date().toISOString() };
@@ -114,10 +114,10 @@ export const DecisionLogicPage: React.FC<Props> = ({
           <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
             UNCERTAINTY-GATED DECISION PIPELINE
           </h2>
-          <HeadingNote title="Rule 3 checks prediction uncertainty before soil and disease conditions.">Three safety checks</HeadingNote>
+          <HeadingNote title="The safety brake checks uncertainty before the scenario moisture threshold.">Two decision gates</HeadingNote>
         </div>
         <p className="text-xs text-zinc-500 font-sans">
-          Safety-first cascade: Rule 3 (Epistemic Safety Brake) is evaluated prior to agronomic moisture and pathogen checks.
+          Safety-first cascade: the uncertainty brake is evaluated before the scenario moisture threshold. Wetness is shown as a scouting advisory, never as a command gate.
         </p>
       </div>
 
@@ -261,45 +261,24 @@ export const DecisionLogicPage: React.FC<Props> = ({
 
             <div className="p-3 rounded border border-zinc-200 dark:border-zinc-800 text-[10px] flex flex-col justify-center text-zinc-500">
               <span className="font-bold text-zinc-700 dark:text-zinc-300">[YES: SOIL DRY]</span>
-              <span className="font-sans mt-0.5">Water deficit detected. Check pathogen risk.</span>
+              <span className="font-sans mt-0.5">Water deficit detected. Review the field before using any field-calibrated prescription.</span>
             </div>
           </div>
 
           <ArrowDown className="w-4 h-4 text-zinc-400" />
 
-          {/* Gate 3 */}
+          {/* Advisory: explicitly outside the decision path */}
           <div className="w-full p-3 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-center">
-            <div className="text-[10px] uppercase text-zinc-400 font-bold" title="A high late-blight risk can suspend irrigation despite dry soil.">GATE 3: DISEASE RISK</div>
+            <div className="text-[10px] uppercase text-zinc-400 font-bold" title="A weather-only wetness proxy that prompts scouting; it is not a crop-specific disease model.">SCOUTING ADVISORY · NOT A GATE</div>
             <div className="font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
-              IS LATE BLIGHT RISK &gt; 0.70?
+              MICROCLIMATE WETNESS: {(currentPestRisk.score * 100).toFixed(0)}%
             </div>
             <div className="text-[10px] text-zinc-500">
-              Current Risk: {(currentPestRisk.score * 100).toFixed(0)}% vs Critical: 70%
+              Use this to inspect canopy conditions. It does not suspend or authorise irrigation.
             </div>
           </div>
 
-          <div className="w-full grid grid-cols-2 gap-3">
-            <div
-              className={`p-3 rounded border transition-colors ${
-                isRule2Active
-                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30'
-                  : 'border-zinc-200 dark:border-zinc-800 opacity-50'
-              }`}
-            >
-              <div className="flex items-center gap-1.5 text-amber-600 font-bold text-xs">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                RULE 2 (YES): SUSPENDED
-              </div>
-              <p className="text-[10px] font-sans text-zinc-600 dark:text-zinc-400 mt-1">
-                Soil is dry, but irrigation suspended to prevent blight outbreak.
-              </p>
-              {isRule2Active && (
-                <div className="text-[10px] font-bold text-amber-600 mt-1">
-                  ● LIVE ACTIVE STATE
-                </div>
-              )}
-            </div>
-
+          <div className="w-full grid grid-cols-1 gap-3">
             <div
               className={`p-3 rounded border transition-colors ${
                 isRule1Active
@@ -309,10 +288,10 @@ export const DecisionLogicPage: React.FC<Props> = ({
             >
               <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                RULE 1 (NO): IRRIGATE
+                RULE 1: SCENARIO IRRIGATION PREVIEW
               </div>
               <p className="text-[10px] font-sans text-zinc-600 dark:text-zinc-400 mt-1">
-                Confident, soil dry, pest danger clear. Safe to irrigate.
+                Confidence is within the scenario limit and soil is dry. Field deployment still requires calibrated probes and actuator verification.
               </p>
               {isRule1Active && (
                 <div className="text-[10px] font-bold text-emerald-600 mt-1">
@@ -340,9 +319,6 @@ export const DecisionLogicPage: React.FC<Props> = ({
           <div className="flex flex-wrap items-center gap-2.5 text-[10px]">
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 bg-emerald-500 rounded-xs inline-block" /> IRRIGATE (R1)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 bg-amber-500 rounded-xs inline-block" /> SUSPENDED (R2)
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 bg-rose-500 rounded-xs inline-block" /> LOCKED (R3)

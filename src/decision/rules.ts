@@ -11,7 +11,8 @@ import type {
 export const DEFAULT_DECISION_CONFIG: DecisionConfig = {
   dryThreshold: 0.25,   // m³/m³ – below this the soil is "dry"
   epsilon: 0.12,         // uncertainty interval width that triggers LOCKED
-  pestThreshold: 0.70,   // pest risk score that triggers SUSPENDED
+  pestThreshold: 0.70,   // wetness-proxy threshold for a human advisory
+  pathogenGateEnabled: false,
 };
 
 /* ── Full gated decision engine ──────────────────────────────────── */
@@ -20,9 +21,11 @@ export const DEFAULT_DECISION_CONFIG: DecisionConfig = {
  * Evaluate the irrigation decision using three priority-ordered rules:
  *
  *  Rule 3 (Safety)   – uncertainty too high → LOCKED
- *  Rule 2 (Conflict) – soil dry but pest risk high → SUSPENDED
  *  Rule 1 (Safe)     – soil dry, safe to irrigate → IRRIGATE
  *  Default           – soil moisture adequate, no action
+ *
+ * A microclimate wetness score is attached as an advisory. It cannot block
+ * irrigation unless a validated, crop-specific research configuration opts in.
  */
 export function evaluateDecision(
   currentMoisture: number,
@@ -38,6 +41,9 @@ export function evaluateDecision(
     predictedMoisture: prediction.mean,
     uncertainty: intervalWidth,
     pestRisk: pestRisk.score,
+    advisory: pestRisk.score > config.pestThreshold
+      ? `High microclimate wetness signal (${(pestRisk.score * 100).toFixed(0)}%). Scout the crop; this prototype does not use it to control irrigation.`
+      : undefined,
     timestamp: ts,
   };
 
@@ -51,8 +57,9 @@ export function evaluateDecision(
     };
   }
 
-  // Rule 2 – Conflict: dry soil AND high pest risk
+  // Research-only Rule 2 – never enabled by the field dashboard.
   if (
+    config.pathogenGateEnabled &&
     currentMoisture < config.dryThreshold &&
     pestRisk.score > config.pestThreshold
   ) {
@@ -61,8 +68,7 @@ export function evaluateDecision(
       action: 'SUSPENDED' as ActuatorAction,
       ruleFired: 2,
       reason:
-        `Soil is dry but pest risk is high (${(pestRisk.score * 100).toFixed(1)}%), ` +
-        `irrigation suspended to prevent blight spread`,
+        `Research disease gate: soil is dry but the wetness proxy is high (${(pestRisk.score * 100).toFixed(1)}%)`,
     };
   }
 
@@ -72,7 +78,7 @@ export function evaluateDecision(
       ...base,
       action: 'IRRIGATE' as ActuatorAction,
       ruleFired: 1,
-      reason: `Soil moisture below threshold (${(currentMoisture * 100).toFixed(1)}%), safe to irrigate`,
+      reason: `Soil moisture below scenario threshold (${(currentMoisture * 100).toFixed(1)}%); prototype irrigation preview only`,
     };
   }
 

@@ -1,6 +1,6 @@
 import type { PestRiskParams, PestRiskResult, WeatherDataPoint } from '../types';
 
-/* ── Default parameters for late blight (Phytophthora infestans) ── */
+/* ── Default microclimate wetness proxy ─────────────────────────── */
 
 export const DEFAULT_PEST_PARAMS: PestRiskParams = {
   tempLow: 10,
@@ -13,13 +13,16 @@ export const DEFAULT_PEST_PARAMS: PestRiskParams = {
 /* ── Pest risk computation ────────────────────────────────────────── */
 
 /**
- * Compute a composite pest-risk score from the most recent data window
+ * Compute a composite microclimate wetness score from the most recent data window
  * (typically last 24 hours).
  *
- * The model focuses on late blight (Phytophthora infestans), combining:
+ * The model retains a research-style late-blight environmental proxy, combining:
  *   • temperature window favourability
  *   • sustained high humidity
  *   • leaf-wetness proxy (dew-point depression or rain)
+ *
+ * It is deliberately not a diagnosis and is not crop-specific. Consumers must
+ * present this as a scouting advisory unless a validated crop model is supplied.
  */
 export function computePestRisk(
   data: (WeatherDataPoint | null)[],

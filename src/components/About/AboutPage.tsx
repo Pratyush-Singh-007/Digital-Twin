@@ -160,7 +160,9 @@ export class ExportedLSTMModel implements ModelInterface {
 
         <ul className="text-xs font-sans text-zinc-600 dark:text-zinc-400 space-y-1.5 list-disc list-inside">
           <li><strong>Surrogate Model:</strong> In-browser model is an honest linear ridge surrogate with lag features.</li>
-          <li><strong>Pathogen Index:</strong> Focuses on Phytophthora infestans microclimate susceptibility (temperature, dew-point depression, continuous RH); real epidemiology involves spore trapping and canopy density.</li>
+          <li><strong>Wetness Advisory:</strong> The temperature, humidity, and wetness proxy is a scouting cue only. It is not a diagnosis, is not crop-specific, and does not control irrigation.</li>
+          <li><strong>Field Calibration:</strong> The scenario dry threshold is not calibrated to a crop stage, soil texture, root depth, field capacity, or permanent wilting point.</li>
+          <li><strong>Spatial Coverage:</strong> The field-twin plots visualise one incoming time series; they are not twelve independently installed field sensors.</li>
           <li><strong>Reanalysis Resolution:</strong> ERA5-Land gridded at ~9 km resolution.</li>
           <li><strong>Exchangeability:</strong> Conformal prediction assumes exchangeable validation residuals.</li>
           <li><strong>Software-Only:</strong> Digital twin prototype without physical IoT relay hardware.</li>

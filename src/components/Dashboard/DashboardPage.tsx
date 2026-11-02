@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import type { WeatherDataPoint, PestRiskParams, LocationPreset } from '../../types';
+import type { DataSourceStatus, WeatherDataPoint, PestRiskParams, LocationPreset } from '../../types';
 import { SurrogateModel } from '../../model/surrogate';
 import { computePestRisk } from '../../agronomy/pestRisk';
 import { evaluateDecision } from '../../decision/rules';
-import { SoilMoistureChart } from './SoilMoistureChart';
 import { FieldTwin3D } from './FieldTwin3D';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { HeadingNote } from '../HeadingNote';
+import { OperationalReadiness } from './OperationalReadiness';
 
 interface Props {
   cleanData: WeatherDataPoint[];
@@ -15,6 +15,7 @@ interface Props {
   isLoading: boolean;
   error: string | null;
   location: LocationPreset;
+  dataSource: DataSourceStatus;
   dropoutRate: number;
   setDropoutRate: (r: number) => void;
   heatSpike: boolean;
@@ -36,6 +37,7 @@ export const DashboardPage: React.FC<Props> = ({
   isLoading,
   error,
   location,
+  dataSource,
   dropoutRate,
   setDropoutRate,
   heatSpike,
@@ -69,17 +71,12 @@ export const DashboardPage: React.FC<Props> = ({
     return surrogate.predict(currentWindow);
   }, [surrogate, currentWindow]);
 
-  // 4. Multi-step forward horizon (12 hours ahead)
-  const forecastPoints = useMemo(() => {
-    return surrogate.forecastHorizon(currentWindow, 12);
-  }, [surrogate, currentWindow]);
-
-  // 5. Agronomic pest risk from latest telemetry
+  // 4. Agronomic pest risk from latest telemetry
   const pestRisk = useMemo(() => {
     return computePestRisk(currentWindow, pestParams);
   }, [currentWindow, pestParams]);
 
-  // 6. Latest observed soil moisture
+  // 5. Latest observed soil moisture
   const latestMoisture = useMemo(() => {
     for (let i = currentWindow.length - 1; i >= 0; i--) {
       const pt = currentWindow[i];
@@ -88,12 +85,13 @@ export const DashboardPage: React.FC<Props> = ({
     return 0.28;
   }, [currentWindow]);
 
-  // 7. Decision rule evaluation
+  // 6. Decision rule evaluation
   const decision = useMemo(() => {
     return evaluateDecision(latestMoisture, prediction, pestRisk, {
       dryThreshold,
       epsilon,
       pestThreshold: 0.70,
+      pathogenGateEnabled: false,
     });
   }, [latestMoisture, prediction, pestRisk, dryThreshold, epsilon]);
 
@@ -141,16 +139,7 @@ export const DashboardPage: React.FC<Props> = ({
         corruptedIndices={corruptedIndices}
         totalCount={cleanData.length}
       />
-
-      {/* Main Forecast Chart */}
-      <SoilMoistureChart
-        cleanData={cleanData}
-        corruptedData={corruptedData}
-        corruptedIndices={corruptedIndices}
-        currentPrediction={prediction}
-        forecastPoints={forecastPoints}
-      />
-
+      <OperationalReadiness dataSource={dataSource} location={location} currentWindow={currentWindow} />
     </div>
   );
 };

@@ -104,8 +104,8 @@ export const ActuatorPanel: React.FC<Props> = ({
             {isLocked
               ? 'LOCKED: MANUAL REVIEW REQUIRED'
               : isSuspended
-              ? 'SUSPENDED: PEST CONFLICT / ADEQUATE'
-              : 'IRRIGATE: SAFE ACTION AUTHORIZED'}
+              ? 'SUSPENDED: HOLD / ADEQUATE'
+              : 'IRRIGATE: SCENARIO PREVIEW'}
           </h2>
           <HeadingNote>Prototype command preview</HeadingNote>
 
@@ -125,9 +125,10 @@ export const ActuatorPanel: React.FC<Props> = ({
               UNCERTAINTY: ±{((decision.uncertainty / 2) * 100).toFixed(1)}%
             </span>
             <span className="px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-              PEST RISK: {(decision.pestRisk * 100).toFixed(0)}%
+              WETNESS ADVISORY: {(decision.pestRisk * 100).toFixed(0)}%
             </span>
           </div>
+          {decision.advisory && <p className="pt-1 text-[10px] leading-relaxed text-amber-700 dark:text-amber-300">{decision.advisory}</p>}
         </div>
       </div>
 

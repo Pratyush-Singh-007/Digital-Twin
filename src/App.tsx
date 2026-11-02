@@ -8,7 +8,6 @@ import { Layout } from './components/Layout';
 import { DashboardPage } from './components/Dashboard/DashboardPage';
 import { DecisionLogicPage } from './components/DecisionLogic/DecisionLogicPage';
 import { SeasonSimPage } from './components/SeasonSim/SeasonSimPage';
-import { ModelEvalPage } from './components/ModelEval/ModelEvalPage';
 import { AboutPage } from './components/About/AboutPage';
 import { GuidedDemo } from './components/GuidedDemo';
 
@@ -80,6 +79,7 @@ export function App() {
           isLoading={isLoading}
           error={error}
           location={location}
+          dataSource={dataSource}
           dropoutRate={dropoutRate}
           setDropoutRate={setDropoutRate}
           heatSpike={heatSpike}
@@ -109,8 +109,6 @@ export function App() {
       )}
 
       {activeTab === 'simulation' && <SeasonSimPage cleanData={cleanData} />}
-
-      {activeTab === 'evaluation' && <ModelEvalPage cleanData={cleanData} />}
 
       {activeTab === 'about' && <AboutPage />}
 
